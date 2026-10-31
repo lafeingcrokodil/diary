@@ -5,6 +5,8 @@
 - Work incrementally: each PR should be a small, self-contained change that
   is easy to review.
 - Keep `docs/roadmap.md` up to date as milestones progress.
+- Keep PR titles and descriptions up to date: when a PR changes after it's
+  opened (e.g. in response to review feedback), update them to match.
 
 ## Code comments
 
