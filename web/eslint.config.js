@@ -51,6 +51,9 @@ export default defineConfig(
 			// and sort-imports can't fix the order of import statements itself.
 			'sort-keys': 'off',
 			'sort-imports': 'off',
+			// Combining consecutive declarations into one statement makes them
+			// harder to read and to change.
+			'one-var': 'off',
 			// Ternaries are fine for simple conditional values.
 			'no-ternary': 'off',
 			// TypeScript already tracks where undefined is allowed, and some APIs

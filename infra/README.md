@@ -130,6 +130,9 @@ doesn't exist yet):
    - under **Authorized JavaScript origins**: `https://diary.lafeingcrokodil.com`
    - under **Authorized redirect URIs**: `https://diary.lafeingcrokodil.com/__/auth/handler`
 
+   To also sign in on the front end's dev server, add `http://localhost:5173`
+   and `http://localhost:5173/__/auth/handler` in the same places.
+
    The sign-in flow runs on the app's own domain rather than on
    `firebaseapp.com`, so that browsers that block third-party cookies don't
    break it. Firebase Hosting serves the `/__/auth/` pages.

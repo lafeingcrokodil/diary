@@ -49,7 +49,7 @@ can each be reviewed comfortably on their own.
 - [x] Firebase project, with Hosting serving the app on `diary.lafeingcrokodil.com`
 - [x] Firebase Authentication with the Google provider (Terraform, plus a
       one-off step in the Firebase console)
-- [ ] Front-end sign-in flow
+- [x] Front-end sign-in flow
 - [ ] Go middleware verifying ID tokens against an email allowlist
 
 ### M3 – Foods
