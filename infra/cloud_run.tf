@@ -1,6 +1,6 @@
 # The identity that the app runs as. It only gets the roles that the app needs,
 # which so far are none.
-resource "google_service_account" "app" {
+resource "google_service_account" "app_runtime" {
   account_id  = "app-runtime"
   description = "Runs the Cloud Run service."
 
@@ -17,7 +17,7 @@ resource "google_cloud_run_v2_service" "app" {
   invoker_iam_disabled = true
 
   template {
-    service_account = google_service_account.app.email
+    service_account = google_service_account.app_runtime.email
 
     # Scale to zero when idle, and cap the number of instances, which also
     # caps the cost.
