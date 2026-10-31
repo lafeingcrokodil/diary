@@ -14,7 +14,7 @@ be done once.
    accounts list` shows the account ID):
 
    ```bash
-   gcloud projects create lafeingcrokodil-diary
+   gcloud projects create lafeingcrokodil-diary --name="Diary"
    ```
 
    ```bash
@@ -46,6 +46,16 @@ be done once.
    gcloud auth application-default set-quota-project lafeingcrokodil-diary
    ```
 
+4. Tell Terraform which billing account pays for the project, by creating
+   `infra/terraform.tfvars` (it's ignored by Git):
+
+   ```hcl
+   billing_account = "<billing-account-id>"
+   ```
+
+   Creating the budget alert requires permission to manage budgets on the
+   billing account, which the account's administrators have.
+
 ## Applying changes
 
 ```bash
@@ -54,6 +64,11 @@ terraform init
 terraform plan
 terraform apply
 ```
+
+When the project's spending reaches 50%, 90% and 100% of the monthly budget
+(€5 or $5 by default, in the billing account's currency), or is forecast to
+exceed it, the billing account's administrators and users get an email. To
+change the amount, set `monthly_budget` in `terraform.tfvars`.
 
 CI checks the formatting and validity of the configuration on every pull
 request, but doesn't apply it.

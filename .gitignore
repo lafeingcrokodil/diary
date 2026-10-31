@@ -3,3 +3,5 @@
 .terraform/
 *.tfstate
 *.tfstate.*
+# Values for Terraform variables, e.g. the billing account ID.
+terraform.tfvars
