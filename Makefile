@@ -30,9 +30,12 @@ $(FRONTEND):
 
 # The minimum percentage of statements that the tests must cover in each
 # package in internal/. The other packages only wire things together, so they
-# aren't checked, and neither are test helper packages (whose names end in
-# "test"), which only other packages' tests run.
+# aren't checked.
 MIN_COVERAGE := 80
+
+# Test helper packages, which only other packages' tests run, so their coverage
+# isn't checked. Keep in sync with the exclusions in .golangci.yml.
+TEST_HELPERS := internal/food/foodtest
 
 test: $(FRONTEND)
 	go test -race -coverprofile=coverage.out ./...
@@ -41,10 +44,11 @@ test: $(FRONTEND)
 # MIN_COVERAGE coverage. Each line of the profile after the first is
 # "file:range statements count", and a package is its file's directory.
 cover: test
-	@awk -v min=$(MIN_COVERAGE) ' \
+	@awk -v min=$(MIN_COVERAGE) -v helpers="$(TEST_HELPERS)" ' \
+		BEGIN { for (i = split(helpers, list, " "); i > 0; i--) helper["/" list[i]] = 1 } \
 		NR > 1 && $$1 ~ /\/internal\// { \
 			pkg = $$1; sub(/\/[^\/]*$$/, "", pkg); \
-			if (pkg ~ /test$$/) next; \
+			for (h in helper) if (substr(pkg, length(pkg) - length(h) + 1) == h) next; \
 			total[pkg] += $$2; if ($$3 > 0) covered[pkg] += $$2 \
 		} \
 		END { \
