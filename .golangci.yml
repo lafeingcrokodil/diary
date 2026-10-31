@@ -25,6 +25,10 @@ linters:
     # error.
     - noinlineerr
   settings:
+    varnamelen:
+      # "id" is as clear as a longer name would be.
+      ignore-names:
+        - id
     wsl_v5:
       disable:
         - return
