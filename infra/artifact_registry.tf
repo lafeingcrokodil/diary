@@ -1,13 +1,13 @@
-resource "google_artifact_registry_repository" "images" {
-  repository_id = "app"
+resource "google_artifact_registry_repository" "main" {
+  repository_id = "main"
   location      = var.region
   format        = "DOCKER"
-  description   = "Container images of the app."
+  description   = "Container images."
 
-  # Delete images older than 30 days, but always keep the five most recent
-  # ones, so that storage stays within the free tier while recent versions
-  # remain available for rollbacks. Keep policies take precedence over delete
-  # policies.
+  # Delete image versions older than 30 days, but always keep the five most
+  # recent versions of each image, so that storage stays within the free tier
+  # while recent versions remain available for rollbacks. Keep policies take
+  # precedence over delete policies.
   cleanup_policies {
     id     = "delete-old"
     action = "DELETE"

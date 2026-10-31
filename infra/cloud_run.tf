@@ -7,13 +7,6 @@ resource "google_service_account" "app_runtime" {
   depends_on = [google_project_service.services["iam.googleapis.com"]]
 }
 
-# The resource used to be called "app". This tells Terraform that it's the same
-# service account, so that it isn't deleted and recreated.
-moved {
-  from = google_service_account.app
-  to   = google_service_account.app_runtime
-}
-
 resource "google_cloud_run_v2_service" "app" {
   name     = "app"
   location = var.region
