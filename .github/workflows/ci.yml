@@ -69,10 +69,10 @@ jobs:
           docker run --detach --publish 8080:8080 diary
           # Give the server a few seconds to start.
           for attempt in 1 2 3 4 5; do
-            curl --fail --silent localhost:8080/healthz && break
+            curl --fail --silent localhost:8080/health && break
             sleep 1
           done
-          curl --fail --silent --show-error localhost:8080/healthz
+          curl --fail --silent --show-error localhost:8080/health
           curl --fail --silent --show-error localhost:8080/ | grep --quiet '<html'
 
   terraform:

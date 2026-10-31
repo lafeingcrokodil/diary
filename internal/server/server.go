@@ -12,7 +12,9 @@ import (
 // front end from the given files, which must include an index.html.
 func New(frontend fs.FS) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", handleHealthz)
+	mux.HandleFunc("GET /health", handleHealth)
+	// Deprecated: the old path of the health check, to be removed.
+	mux.HandleFunc("GET /healthz", handleHealth)
 	// Unknown API routes get a 404 rather than the front end.
 	mux.Handle("/api/", http.NotFoundHandler())
 	// This can't be "GET /", because ServeMux would reject it as conflicting
@@ -21,8 +23,8 @@ func New(frontend fs.FS) http.Handler {
 	return mux
 }
 
-// handleHealthz reports that the server is up and able to handle requests.
-func handleHealthz(w http.ResponseWriter, _ *http.Request) {
+// handleHealth reports that the server is up and able to handle requests.
+func handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	_, _ = w.Write([]byte("ok\n"))
 }
