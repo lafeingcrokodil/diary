@@ -31,9 +31,11 @@ func (s *MemoryStore) Create(_ context.Context, owner string, food Food) (Food, 
 
 	food.ID = rand.Text()
 	food.Owner = owner
+	// Only the stored copy needs its own servings: the returned food shares
+	// them with the caller's input, which the store doesn't keep.
 	s.foods[food.ID] = clone(food)
 
-	return clone(food), nil
+	return food, nil
 }
 
 // Get implements Store.
@@ -85,7 +87,7 @@ func (s *MemoryStore) Update(_ context.Context, owner string, food Food) (Food, 
 	food.Owner = owner
 	s.foods[food.ID] = clone(food)
 
-	return clone(food), nil
+	return food, nil
 }
 
 // Delete implements Store.
