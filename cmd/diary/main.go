@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	// Cloud Run tells us which port to listen on via the PORT environment variable.
+	// The port to listen on can be set via the PORT environment variable.
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

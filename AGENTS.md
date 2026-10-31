@@ -6,6 +6,13 @@
   is easy to review.
 - Keep `docs/roadmap.md` up to date as milestones progress.
 
+## Code comments
+
+Keep comments within the scope of the code they describe. A comment should
+explain what the code does and why, without relying on details of other parts
+of the system (such as where it's deployed or who calls it), so that it doesn't
+become stale when those other parts change.
+
 ## Branch names
 
 Name branches after their purpose, in the form `<type>/<short-description>`,

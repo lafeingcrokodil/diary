@@ -7,7 +7,7 @@ See [docs/roadmap.md](docs/roadmap.md) for the plan.
 
 ## Development
 
-Requires Go 1.24 or later.
+Requires the Go version specified in `go.mod`.
 
 ```bash
 make test   # run the tests
