@@ -1,0 +1,61 @@
+package food_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/lafeingcrokodil/diary/internal/food"
+)
+
+// bread returns a valid food, which tests change as they need.
+func bread() food.Food {
+	return food.Food{
+		Name:       "Rye bread",
+		Brand:      "Bakery",
+		Unit:       food.Grams,
+		KcalPer100: 210,
+		Servings:   []food.Serving{{Name: "slice", Amount: 40}, {Name: "loaf", Amount: 750}},
+	}
+}
+
+func TestValidate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		change  func(f *food.Food)
+		wantErr bool
+	}{
+		{"valid", func(*food.Food) {}, false},
+		{"millilitres", func(f *food.Food) { f.Unit = food.Millilitres }, false},
+		{"no brand", func(f *food.Food) { f.Brand = "" }, false},
+		{"no servings", func(f *food.Food) { f.Servings = nil }, false},
+		{"no energy", func(f *food.Food) { f.KcalPer100 = 0 }, false},
+		{"no name", func(f *food.Food) { f.Name = "" }, true},
+		{"no unit", func(f *food.Food) { f.Unit = "" }, true},
+		{"unknown unit", func(f *food.Food) { f.Unit = "oz" }, true},
+		{"negative energy", func(f *food.Food) { f.KcalPer100 = -1 }, true},
+		{"serving without a name", func(f *food.Food) { f.Servings[0].Name = "" }, true},
+		{"serving without an amount", func(f *food.Food) { f.Servings[0].Amount = 0 }, true},
+		{"serving with a negative amount", func(f *food.Food) { f.Servings[0].Amount = -40 }, true},
+		{"servings with the same name", func(f *food.Food) { f.Servings[1].Name = "slice" }, true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			f := bread()
+			test.change(&f)
+
+			err := f.Validate()
+			if test.wantErr {
+				require.ErrorIs(t, err, food.ErrInvalid)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
