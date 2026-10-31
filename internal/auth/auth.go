@@ -40,20 +40,27 @@ type claims struct {
 	EmailVerified bool   `json:"email_verified"` //nolint:tagliatelle // The token format sets the claim's name.
 }
 
-type emailKey struct{}
-
-// WithEmail returns a copy of ctx that carries the email address of the user
-// making the request, which Email returns.
-func WithEmail(ctx context.Context, email string) context.Context {
-	return context.WithValue(ctx, emailKey{}, email)
+// User identifies a signed-in user.
+type User struct {
+	// ID is the user's Firebase user ID, which stays the same for as long as
+	// their account exists (unlike their email address, which can change).
+	ID    string
+	Email string
 }
 
-// Email returns the email address of the user whose request the middleware let
-// through.
-func Email(ctx context.Context) (string, bool) {
-	email, ok := ctx.Value(emailKey{}).(string)
+type userKey struct{}
 
-	return email, ok
+// WithUser returns a copy of ctx that carries the user making the request,
+// which UserFrom returns.
+func WithUser(ctx context.Context, user User) context.Context {
+	return context.WithValue(ctx, userKey{}, user)
+}
+
+// UserFrom returns the user whose request the middleware let through.
+func UserFrom(ctx context.Context) (User, bool) {
+	user, ok := ctx.Value(userKey{}).(User)
+
+	return user, ok
 }
 
 // Middleware only passes on requests that carry a valid ID token (as
@@ -78,6 +85,14 @@ func Middleware(verifier IDTokenVerifier, allowedEmails []string) func(http.Hand
 				return
 			}
 
+			// Firebase always sets the subject to the user's ID, but the verifier
+			// doesn't require one, and users are told apart by it.
+			if token.Subject == "" {
+				slog.WarnContext(req.Context(), "rejecting ID token without a subject")
+				unauthorized(resp)
+				return
+			}
+
 			var tokenClaims claims
 
 			if err := token.Claims(&tokenClaims); err != nil {
@@ -93,7 +108,8 @@ func Middleware(verifier IDTokenVerifier, allowedEmails []string) func(http.Hand
 				return
 			}
 
-			next.ServeHTTP(resp, req.WithContext(WithEmail(req.Context(), tokenClaims.Email)))
+			user := User{ID: token.Subject, Email: tokenClaims.Email}
+			next.ServeHTTP(resp, req.WithContext(WithUser(req.Context(), user)))
 		})
 	}
 }

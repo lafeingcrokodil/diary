@@ -17,6 +17,7 @@ const (
 	indexHTML = "<h1>Diary</h1>"
 	// signedIn is the Authorization header that fakeAuth lets through.
 	signedIn = "Bearer valid"
+	userID   = "user-123"
 	email    = "me@example.com"
 )
 
@@ -57,7 +58,7 @@ func TestMe(t *testing.T) {
 	runTests(t, []testCase{
 		{
 			name: "signed in", path: "/api/me", authHeader: signedIn,
-			wantStatus: http.StatusOK, wantBody: `{"email":"me@example.com"}` + "\n",
+			wantStatus: http.StatusOK, wantBody: `{"id":"user-123","email":"me@example.com"}` + "\n",
 		},
 		{name: "not signed in", path: "/api/me", wantStatus: http.StatusUnauthorized},
 		{
@@ -78,7 +79,7 @@ func TestUnknownAPIRoute(t *testing.T) {
 }
 
 // fakeAuth stands in for auth.Middleware: it lets through requests with the
-// signedIn header, as the user with the address email.
+// signedIn header, as the user with the ID userID and the address email.
 func fakeAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		if req.Header.Get("Authorization") != signedIn {
@@ -86,7 +87,7 @@ func fakeAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(resp, req.WithContext(auth.WithEmail(req.Context(), email)))
+		next.ServeHTTP(resp, req.WithContext(auth.WithUser(req.Context(), auth.User{ID: userID, Email: email})))
 	})
 }
 

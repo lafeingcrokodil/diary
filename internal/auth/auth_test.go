@@ -23,6 +23,7 @@ const (
 	projectID = "test-project"
 	issuer    = "https://securetoken.google.com/" + projectID
 	allowed   = "allowed@example.com"
+	userID    = "user-123"
 )
 
 // with returns a copy of claims with one claim set to value.
@@ -48,7 +49,7 @@ func newSigner(t *testing.T) signer {
 }
 
 // bearer returns an Authorization header with a signed ID token that has the
-// given claims, on top of valid issuer, audience and expiry claims.
+// given claims, on top of valid issuer, audience, expiry and subject claims.
 func (s signer) bearer(t *testing.T, claims map[string]any) string {
 	t.Helper()
 
@@ -57,6 +58,7 @@ func (s signer) bearer(t *testing.T, claims map[string]any) string {
 		"aud": projectID,
 		"exp": time.Now().Add(time.Hour).Unix(),
 		"iat": time.Now().Unix(),
+		"sub": userID,
 	}
 	maps.Copy(payload, claims)
 
@@ -87,7 +89,7 @@ func TestMiddleware(t *testing.T) {
 	trusted, untrusted := newSigner(t), newSigner(t)
 	expired := time.Now().Add(-time.Minute).Unix()
 	// The claims of a user that the middleware should let through, apart from
-	// the issuer, audience and expiry claims that every token gets.
+	// the issuer, audience, expiry and subject claims that every token gets.
 	allowedUser := map[string]any{"email": allowed, "email_verified": true}
 
 	tests := []struct {
@@ -103,6 +105,7 @@ func TestMiddleware(t *testing.T) {
 		{"signed by another key", untrusted.bearer(t, allowedUser), http.StatusUnauthorized},
 		{"expired", trusted.bearer(t, with(allowedUser, "exp", expired)), http.StatusUnauthorized},
 		{"other project", trusted.bearer(t, with(allowedUser, "aud", "other-project")), http.StatusUnauthorized},
+		{"no subject", trusted.bearer(t, with(allowedUser, "sub", "")), http.StatusUnauthorized},
 		{"unverified email", trusted.bearer(t, with(allowedUser, "email_verified", false)), http.StatusForbidden},
 		{"other user", trusted.bearer(t, with(allowedUser, "email", "other@example.com")), http.StatusForbidden},
 		{"no email", trusted.bearer(t, map[string]any{}), http.StatusForbidden},
@@ -110,9 +113,10 @@ func TestMiddleware(t *testing.T) {
 
 	handler := auth.Middleware(trusted.verifier(), []string{allowed})(
 		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-			email, ok := auth.Email(req.Context())
-			assert.True(t, ok, "the request's context has no email")
-			assert.NotEmpty(t, email)
+			user, ok := auth.UserFrom(req.Context())
+			assert.True(t, ok, "the request's context has no user")
+			assert.Equal(t, userID, user.ID)
+			assert.NotEmpty(t, user.Email)
 
 			resp.WriteHeader(http.StatusOK)
 		}),
