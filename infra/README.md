@@ -49,11 +49,13 @@ be done once.
    gcloud auth application-default set-quota-project lafeingcrokodil-diary
    ```
 
-4. Tell Terraform which billing account pays for the project, by creating
-   `infra/terraform.tfvars` (it's ignored by Git):
+4. Tell Terraform which billing account pays for the project, and which
+   Google accounts can use the app, by creating `infra/terraform.tfvars` (it's
+   ignored by Git, which keeps the email addresses out of the repository):
 
    ```hcl
    billing_account = "<billing-account-id>"
+   allowed_emails  = ["<your-email>"]
    ```
 
    Creating the budget alert requires permission to manage budgets on the
@@ -139,6 +141,11 @@ doesn't exist yet):
 
 `terraform output firebase_web_config` shows the configuration that the front
 end uses to connect to Firebase.
+
+Only the Google accounts in `allowed_emails` (in `terraform.tfvars`) can use
+the app's API: Terraform passes them to the Cloud Run service, along with the
+Firebase project, as environment variables. Anyone else can sign in, but gets
+a 403 from the API.
 
 ## Budget
 

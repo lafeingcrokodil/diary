@@ -36,6 +36,17 @@ resource "google_cloud_run_v2_service" "app" {
       # image outside of Terraform (see lifecycle below).
       image = "us-docker.pkg.dev/cloudrun/container/hello"
 
+      # Which users can use the app's API: those who sign in to this Firebase
+      # project with one of the allowed email addresses.
+      env {
+        name  = "FIREBASE_PROJECT_ID"
+        value = var.project_id
+      }
+      env {
+        name  = "ALLOWED_EMAILS"
+        value = join(",", var.allowed_emails)
+      }
+
       resources {
         limits = {
           cpu    = "1"

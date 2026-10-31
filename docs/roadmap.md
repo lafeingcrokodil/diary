@@ -50,7 +50,7 @@ can each be reviewed comfortably on their own.
 - [x] Firebase Authentication with the Google provider (Terraform, plus a
       one-off step in the Firebase console)
 - [x] Front-end sign-in flow
-- [ ] Go middleware verifying ID tokens against an email allowlist
+- [x] Go middleware verifying ID tokens against an email allowlist
 
 ### M3 – Foods
 

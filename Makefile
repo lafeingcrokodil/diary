@@ -5,6 +5,10 @@
 # created so that the Go code still compiles.
 FRONTEND := web/build/index.html
 
+# The Firebase project whose users can sign in, unless set otherwise. The
+# server also requires ALLOWED_EMAILS, which has no default.
+export FIREBASE_PROJECT_ID ?= lafeingcrokodil-diary
+
 # Builds the front end and runs the server on http://localhost:8080.
 run: web
 	go run ./cmd/diary
