@@ -16,7 +16,8 @@ can each be reviewed comfortably on their own.
 - **Front end:** SvelteKit + TypeScript, built as a single-page app with
   `adapter-static`, mobile-first. The built assets are embedded into the Go
   binary with `go:embed`, so the whole app is a single container: no separate
-  hosting, no CORS.
+  hosting, no CORS. Firebase Hosting serves it on a custom domain by forwarding
+  all requests to Cloud Run.
 - **Auth:** Firebase Authentication with the Google provider. The front end
   obtains an ID token; the Go server verifies it and checks the email against
   an allowlist.
@@ -45,7 +46,8 @@ can each be reviewed comfortably on their own.
 
 ### M2 – Authentication
 
-- [ ] Firebase project and Google provider (Terraform)
+- [x] Firebase project, with Hosting serving the app on `diary.lafeingcrokodil.com`
+- [ ] Firebase Authentication with the Google provider (Terraform)
 - [ ] Front-end sign-in flow
 - [ ] Go middleware verifying ID tokens against an email allowlist
 
