@@ -13,6 +13,8 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v4"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
 )
@@ -40,9 +42,7 @@ func newSigner(t *testing.T) signer {
 	t.Helper()
 
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatalf("generating key: %v", err)
-	}
+	require.NoError(t, err)
 
 	return signer{key: key}
 }
@@ -61,24 +61,16 @@ func (s signer) bearer(t *testing.T, claims map[string]any) string {
 	maps.Copy(payload, claims)
 
 	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		t.Fatalf("encoding claims: %v", err)
-	}
+	require.NoError(t, err)
 
 	joseSigner, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: s.key}, nil)
-	if err != nil {
-		t.Fatalf("creating signer: %v", err)
-	}
+	require.NoError(t, err)
 
 	signed, err := joseSigner.Sign(payloadJSON)
-	if err != nil {
-		t.Fatalf("signing token: %v", err)
-	}
+	require.NoError(t, err)
 
 	token, err := signed.CompactSerialize()
-	if err != nil {
-		t.Fatalf("serializing token: %v", err)
-	}
+	require.NoError(t, err)
 
 	return "Bearer " + token
 }
@@ -89,21 +81,20 @@ func (s signer) verifier() *oidc.IDTokenVerifier {
 	return oidc.NewVerifier(issuer, keys, &oidc.Config{ClientID: projectID})
 }
 
-type testCase struct {
-	name       string
-	authHeader string
-	wantStatus int
-}
+func TestMiddleware(t *testing.T) {
+	t.Parallel()
 
-func testCases(t *testing.T, trusted, untrusted signer) []testCase {
-	t.Helper()
-
+	trusted, untrusted := newSigner(t), newSigner(t)
 	expired := time.Now().Add(-time.Minute).Unix()
 	// The claims of a user that the middleware should let through, apart from
 	// the issuer, audience and expiry claims that every token gets.
 	allowedUser := map[string]any{"email": allowed, "email_verified": true}
 
-	return []testCase{
+	tests := []struct {
+		name       string
+		authHeader string
+		wantStatus int
+	}{
 		{"allowed user", trusted.bearer(t, allowedUser), http.StatusOK},
 		{"email in different case", trusted.bearer(t, with(allowedUser, "email", "Allowed@Example.com")), http.StatusOK},
 		{"no header", "", http.StatusUnauthorized},
@@ -116,25 +107,18 @@ func testCases(t *testing.T, trusted, untrusted signer) []testCase {
 		{"other user", trusted.bearer(t, with(allowedUser, "email", "other@example.com")), http.StatusForbidden},
 		{"no email", trusted.bearer(t, map[string]any{}), http.StatusForbidden},
 	}
-}
-
-func TestMiddleware(t *testing.T) {
-	t.Parallel()
-
-	trusted := newSigner(t)
 
 	handler := auth.Middleware(trusted.verifier(), []string{allowed})(
 		http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 			email, ok := auth.Email(req.Context())
-			if !ok || email == "" {
-				t.Error("the request's context has no email")
-			}
+			assert.True(t, ok, "the request's context has no email")
+			assert.NotEmpty(t, email)
 
 			resp.WriteHeader(http.StatusOK)
 		}),
 	)
 
-	for _, test := range testCases(t, trusted, newSigner(t)) {
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -147,12 +131,10 @@ func TestMiddleware(t *testing.T) {
 
 			handler.ServeHTTP(rec, req)
 
-			if rec.Code != test.wantStatus {
-				t.Errorf("status = %d, want %d", rec.Code, test.wantStatus)
-			}
+			assert.Equal(t, test.wantStatus, rec.Code)
 
-			if rec.Code == http.StatusUnauthorized && rec.Header().Get("WWW-Authenticate") != "Bearer" {
-				t.Errorf("WWW-Authenticate = %q, want %q", rec.Header().Get("WWW-Authenticate"), "Bearer")
+			if rec.Code == http.StatusUnauthorized {
+				assert.Equal(t, "Bearer", rec.Header().Get("WWW-Authenticate"))
 			}
 		})
 	}
