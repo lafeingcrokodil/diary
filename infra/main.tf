@@ -11,12 +11,13 @@ provider "google" {
 
 locals {
   services = [
-    "artifactregistry.googleapis.com", # Container images
-    "billingbudgets.googleapis.com",   # Budget alerts
-    "iam.googleapis.com",              # Service accounts, workload identity pools
-    "iamcredentials.googleapis.com",   # Short-lived credentials for GitHub Actions
-    "run.googleapis.com",              # Cloud Run
-    "sts.googleapis.com",              # Token exchange for workload identity federation
+    "artifactregistry.googleapis.com",     # Container images
+    "billingbudgets.googleapis.com",       # Budget alerts
+    "cloudresourcemanager.googleapis.com", # Looking up the project number
+    "iam.googleapis.com",                  # Service accounts, workload identity pools
+    "iamcredentials.googleapis.com",       # Short-lived credentials for GitHub Actions
+    "run.googleapis.com",                  # Cloud Run
+    "sts.googleapis.com",                  # Token exchange for workload identity federation
   ]
 }
 

@@ -41,7 +41,7 @@ can each be reviewed comfortably on their own.
 - [x] Terraform state bucket and API enablement
 - [ ] Artifact Registry and Cloud Run
 - [ ] Continuous deployment from `main` via Workload Identity Federation
-- [ ] Budget alert
+- [x] Budget alert
 
 ### M2 – Authentication
 
