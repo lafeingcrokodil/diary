@@ -20,6 +20,10 @@ linters:
     # functions without making them easier to read. (wsl_v5's return check
     # is disabled below for the same reason.)
     - nlreturn
+    # Checking an error inline (if err := f(); err != nil) keeps err scoped to
+    # the check, which is the idiomatic style when a call only returns an
+    # error.
+    - noinlineerr
   settings:
     wsl_v5:
       disable:
@@ -27,9 +31,12 @@ linters:
   exclusions:
     rules:
       # Table-driven tests repeat paths and test names in their cases, which
-      # are easier to read as literals than as constants.
+      # are easier to read as literals than as constants, and they grow with
+      # each case, so splitting them up to stay within a length limit doesn't
+      # make them easier to follow.
       - path: _test\.go
         linters:
+          - funlen
           - goconst
 
 formatters:

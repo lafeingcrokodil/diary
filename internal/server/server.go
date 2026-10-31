@@ -58,8 +58,7 @@ func handleMe(resp http.ResponseWriter, req *http.Request) {
 
 	resp.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(resp).Encode(user{Email: email})
-	if err != nil {
+	if err := json.NewEncoder(resp).Encode(user{Email: email}); err != nil {
 		slog.ErrorContext(req.Context(), "writing response", "err", err)
 	}
 }

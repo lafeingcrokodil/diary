@@ -80,8 +80,7 @@ func Middleware(verifier IDTokenVerifier, allowedEmails []string) func(http.Hand
 
 			var tokenClaims claims
 
-			err = token.Claims(&tokenClaims)
-			if err != nil {
+			if err := token.Claims(&tokenClaims); err != nil {
 				slog.WarnContext(req.Context(), "parsing ID token claims", "err", err)
 				unauthorized(resp)
 				return
