@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lafeingcrokodil/diary/internal/server"
+	"github.com/lafeingcrokodil/diary/web"
 )
 
 // readHeaderTimeout limits how long a client may take to send request headers,
@@ -20,16 +21,22 @@ func main() {
 		port = "8080"
 	}
 
+	frontend, err := web.Build()
+	if err != nil {
+		slog.Error("loading front end", "err", err)
+		os.Exit(1)
+	}
+
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           server.New(),
+		Handler:           server.New(frontend),
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
 	slog.Info("starting server", "addr", srv.Addr)
 
 	// ListenAndServe only ever returns a non-nil error.
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	slog.Error("server stopped", "err", err)
 	os.Exit(1)
 }

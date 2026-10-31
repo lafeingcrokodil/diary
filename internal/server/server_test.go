@@ -1,41 +1,83 @@
 package server_test
 
 import (
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/fstest"
 
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
+const indexHTML = "<h1>Diary</h1>"
+
+type testCase struct {
+	name       string
+	method     string
+	path       string
+	wantStatus int
+	wantBody   string
+}
+
 func TestHealthz(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name       string
-		method     string
-		wantStatus int
-		wantBody   string
-	}{
-		{name: "GET succeeds", method: http.MethodGet, wantStatus: http.StatusOK, wantBody: "ok\n"},
-		{name: "POST is rejected", method: http.MethodPost, wantStatus: http.StatusMethodNotAllowed, wantBody: ""},
-	}
+	runTests(t, []testCase{
+		{name: "GET succeeds", method: http.MethodGet, path: "/healthz", wantStatus: http.StatusOK, wantBody: "ok\n"},
+		{name: "POST is rejected", method: http.MethodPost, path: "/healthz", wantStatus: http.StatusMethodNotAllowed},
+	})
+}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
+func TestFrontend(t *testing.T) {
+	t.Parallel()
+
+	runTests(t, []testCase{
+		{name: "root serves index.html", path: "/", wantStatus: http.StatusOK, wantBody: indexHTML},
+		{name: "app route serves index.html", path: "/recipes/123", wantStatus: http.StatusOK, wantBody: indexHTML},
+		{name: "directory serves index.html", path: "/_app/immutable", wantStatus: http.StatusOK, wantBody: indexHTML},
+		{name: "existing file", path: "/_app/app.js", wantStatus: http.StatusOK, wantBody: "console.log('hi');"},
+		{name: "missing file", path: "/_app/old.js", wantStatus: http.StatusNotFound},
+		{name: "POST is rejected", method: http.MethodPost, path: "/recipes/123", wantStatus: http.StatusMethodNotAllowed},
+	})
+}
+
+func TestUnknownAPIRoute(t *testing.T) {
+	t.Parallel()
+
+	runTests(t, []testCase{
+		{name: "GET", path: "/api/unknown", wantStatus: http.StatusNotFound},
+		{name: "POST", method: http.MethodPost, path: "/api/unknown", wantStatus: http.StatusNotFound},
+	})
+}
+
+// runTests sends each test case's request to a server with a small front end,
+// and checks the response. An empty method means GET, and an empty wantBody
+// means that the body isn't checked.
+func runTests(t *testing.T, tests []testCase) {
+	t.Helper()
+
+	handler := server.New(fstest.MapFS{
+		"index.html":     {Data: []byte(indexHTML)},
+		"_app/app.js":    {Data: []byte("console.log('hi');")},
+		"_app/immutable": {Mode: fs.ModeDir},
+	})
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			req := httptest.NewRequestWithContext(t.Context(), testCase.method, "/healthz", nil)
+			req := httptest.NewRequestWithContext(t.Context(), test.method, test.path, nil)
 			rec := httptest.NewRecorder()
 
-			server.New().ServeHTTP(rec, req)
+			handler.ServeHTTP(rec, req)
 
-			if rec.Code != testCase.wantStatus {
-				t.Errorf("status = %d, want %d", rec.Code, testCase.wantStatus)
+			if rec.Code != test.wantStatus {
+				t.Errorf("status = %d, want %d", rec.Code, test.wantStatus)
 			}
 
-			if testCase.wantBody != "" && rec.Body.String() != testCase.wantBody {
-				t.Errorf("body = %q, want %q", rec.Body.String(), testCase.wantBody)
+			if test.wantBody != "" && rec.Body.String() != test.wantBody {
+				t.Errorf("body = %q, want %q", rec.Body.String(), test.wantBody)
 			}
 		})
 	}

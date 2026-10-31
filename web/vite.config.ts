@@ -3,6 +3,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+	server: {
+		// In development, forward API requests to the Go server (make run).
+		proxy: { '/api': 'http://localhost:8080' }
+	},
 	plugins: [
 		sveltekit({
 			compilerOptions: {
