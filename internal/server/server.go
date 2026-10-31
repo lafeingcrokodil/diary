@@ -2,7 +2,6 @@
 package server
 
 import (
-	"encoding/json"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -10,19 +9,21 @@ import (
 	"strings"
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
+	"github.com/lafeingcrokodil/diary/internal/food"
 )
 
 // New returns an http.Handler that serves all of the app's routes, plus the
 // front end from the given files, which must include an index.html.
 //
 // Every request under /api/ goes through authenticate, which must only pass on
-// requests from allowed users, with their email address in the context (see
-// auth.WithUser).
-func New(frontend fs.FS, authenticate func(http.Handler) http.Handler) http.Handler {
+// requests from allowed users, with the user in the context (see
+// auth.WithUser). Foods are kept in foods.
+func New(frontend fs.FS, authenticate func(http.Handler) http.Handler, foods food.Store) http.Handler {
 	// The API's own mux responds with a 404 to unknown routes, and a 405 to
 	// known routes with other methods.
 	api := http.NewServeMux()
 	api.HandleFunc("GET /api/me", handleMe)
+	handleFoods(api, foods)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", handleHealth)
@@ -57,11 +58,7 @@ func handleMe(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(resp).Encode(me{ID: user.ID, Email: user.Email}); err != nil {
-		slog.ErrorContext(req.Context(), "writing response", "err", err)
-	}
+	writeJSON(resp, req, http.StatusOK, me{ID: user.ID, Email: user.Email})
 }
 
 // handleFrontend serves a single-page app: requests for existing files get
