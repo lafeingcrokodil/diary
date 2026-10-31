@@ -26,7 +26,7 @@ make build  # build the front end and a server binary (bin/diary)
 make image  # build the container image (diary), which needs only Docker
 make web    # build only the front end
 make test   # run the tests
-make cover  # run the tests and check coverage of internal/ (at least 80%)
+make cover  # run the tests and check that each package in internal/ has at least 80% coverage
 make vet    # run go vet
 make lint   # run golangci-lint (see .golangci.yml)
 ```
