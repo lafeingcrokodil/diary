@@ -2,3 +2,11 @@
 # (value in minutes), to reduce the risk from compromised releases, which
 # are usually caught and removed within days.
 minimumReleaseAge: 20160
+
+# Whether dependencies may run their install scripts. Both of these are
+# optional: @firebase/util's reads a Firebase configuration from an
+# environment variable that we don't use, and protobufjs's only prints
+# version warnings.
+allowBuilds:
+  '@firebase/util': false
+  protobufjs: false

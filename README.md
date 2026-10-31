@@ -47,4 +47,5 @@ cd web && pnpm dev    # front end on http://localhost:5173
 ```
 
 Then open http://localhost:5173. Vite forwards requests under `/api` to the Go
-server.
+server, and the Firebase configuration and sign-in pages (under `/__/`) to the
+deployed site.

@@ -4,8 +4,13 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	server: {
-		// In development, forward API requests to the Go server (make run).
-		proxy: { '/api': 'http://localhost:8080' }
+		proxy: {
+			// In development, forward API requests to the Go server (make run).
+			'/api': 'http://localhost:8080',
+			// Firebase Hosting serves the Firebase configuration and the sign-in
+			// pages under /__/, so forward those to the deployed site.
+			'/__': { target: 'https://lafeingcrokodil-diary.web.app', changeOrigin: true }
+		}
 	},
 	plugins: [
 		sveltekit({
