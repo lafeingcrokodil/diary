@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lafeingcrokodil/diary/internal/logging"
 	"github.com/lafeingcrokodil/diary/internal/server"
 	"github.com/lafeingcrokodil/diary/web"
 )
@@ -16,6 +17,8 @@ import (
 const readHeaderTimeout = 10 * time.Second
 
 func main() {
+	slog.SetDefault(slog.New(logging.NewHandler(os.Stdout, slog.LevelInfo)))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
