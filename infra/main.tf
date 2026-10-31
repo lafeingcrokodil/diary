@@ -24,6 +24,7 @@ locals {
     "firebasehosting.googleapis.com",  # Firebase Hosting
     "iam.googleapis.com",              # Service accounts, workload identity pools
     "iamcredentials.googleapis.com",   # Short-lived credentials for GitHub Actions
+    "identitytoolkit.googleapis.com",  # Firebase Authentication (Identity Platform)
     "run.googleapis.com",              # Cloud Run
     "sts.googleapis.com",              # Token exchange for workload identity federation
   ]

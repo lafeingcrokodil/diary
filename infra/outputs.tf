@@ -22,3 +22,13 @@ output "custom_domain_dns_updates" {
   description = "DNS records to add for the custom domain, so that Firebase Hosting can verify it and serve it."
   value       = google_firebase_hosting_custom_domain.default.required_dns_updates
 }
+
+output "firebase_web_config" {
+  description = "Firebase configuration for the front end. None of these values are secret: they identify the project, and are visible to anyone who loads the app."
+  value = {
+    apiKey     = data.google_firebase_web_app_config.default.api_key
+    authDomain = var.domain
+    projectId  = var.project_id
+    appId      = google_firebase_web_app.default.app_id
+  }
+}
