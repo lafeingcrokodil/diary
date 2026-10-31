@@ -4,6 +4,7 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
@@ -64,6 +65,9 @@ func Middleware(verifier IDTokenVerifier, allowedEmails []string) func(http.Hand
 
 			token, err := verifier.Verify(req.Context(), rawToken)
 			if err != nil {
+				// Most of these are routine (e.g. an expired token), but logging them
+				// also surfaces problems such as failing to fetch the signing keys.
+				slog.WarnContext(req.Context(), "rejecting ID token", "err", err)
 				unauthorized(resp)
 				return
 			}
@@ -72,11 +76,14 @@ func Middleware(verifier IDTokenVerifier, allowedEmails []string) func(http.Hand
 
 			err = token.Claims(&tokenClaims)
 			if err != nil {
+				slog.WarnContext(req.Context(), "parsing ID token claims", "err", err)
 				unauthorized(resp)
 				return
 			}
 
 			if !tokenClaims.EmailVerified || !isAllowed(tokenClaims.Email, allowedEmails) {
+				slog.WarnContext(req.Context(), "rejecting user",
+					"email", tokenClaims.Email, "emailVerified", tokenClaims.EmailVerified)
 				http.Error(resp, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
 			}
