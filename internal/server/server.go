@@ -9,7 +9,6 @@ import (
 func New() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
-
 	return mux
 }
 
