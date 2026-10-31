@@ -113,6 +113,30 @@ can't verify it or issue a certificate for it. Remove any other A, AAAA or
 CNAME records for the same name. Verification and the certificate can take up
 to 24 hours, though usually only a few hours.
 
+## Sign-in
+
+Firebase Authentication (Identity Platform) handles signing in with Google.
+Terraform configures it, except for Google sign-in itself, which needs an
+OAuth client that Terraform can't create. After the first `terraform apply`
+(the order matters, because Terraform can only create the configuration if it
+doesn't exist yet):
+
+1. In the [Firebase console](https://console.firebase.google.com/), open the
+   project, go to **Authentication → Sign-in method**, and enable **Google**
+   (with your email as the support email). This creates an OAuth client called
+   "Web client (auto created by Google Service)".
+2. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials?project=lafeingcrokodil-diary),
+   open that OAuth client and add:
+   - under **Authorized JavaScript origins**: `https://diary.lafeingcrokodil.com`
+   - under **Authorized redirect URIs**: `https://diary.lafeingcrokodil.com/__/auth/handler`
+
+   The sign-in flow runs on the app's own domain rather than on
+   `firebaseapp.com`, so that browsers that block third-party cookies don't
+   break it. Firebase Hosting serves the `/__/auth/` pages.
+
+`terraform output firebase_web_config` shows the configuration that the front
+end uses to connect to Firebase.
+
 ## Budget
 
 When the project's spending reaches 50%, 90% and 100% of the monthly budget

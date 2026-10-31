@@ -47,7 +47,8 @@ can each be reviewed comfortably on their own.
 ### M2 – Authentication
 
 - [x] Firebase project, with Hosting serving the app on `diary.lafeingcrokodil.com`
-- [ ] Firebase Authentication with the Google provider (Terraform)
+- [x] Firebase Authentication with the Google provider (Terraform, plus a
+      one-off step in the Firebase console)
 - [ ] Front-end sign-in flow
 - [ ] Go middleware verifying ID tokens against an email allowlist
 
