@@ -1,4 +1,6 @@
 /bin
+# Test coverage profile.
+coverage.out
 # Terraform's working directory and any local state.
 .terraform/
 *.tfstate
