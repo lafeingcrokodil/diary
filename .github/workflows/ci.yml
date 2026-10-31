@@ -106,7 +106,7 @@ jobs:
       # federation exchanges for Google Cloud credentials.
       id-token: write
     env:
-      IMAGE: europe-west10-docker.pkg.dev/lafeingcrokodil-diary/main/app:${{ github.sha }}
+      IMAGE: europe-west9-docker.pkg.dev/lafeingcrokodil-diary/main/app:${{ github.sha }}
     steps:
       - uses: actions/checkout@v7
       - uses: google-github-actions/auth@v3
@@ -114,11 +114,11 @@ jobs:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
-      - run: gcloud auth configure-docker europe-west10-docker.pkg.dev --quiet
+      - run: gcloud auth configure-docker europe-west9-docker.pkg.dev --quiet
       - run: docker build --tag "$IMAGE" .
       - run: docker push "$IMAGE"
       - run: >-
           gcloud run services update app
           --project=lafeingcrokodil-diary
-          --region=europe-west10
+          --region=europe-west9
           --image="$IMAGE"

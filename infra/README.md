@@ -1,7 +1,10 @@
 # infra
 
 Terraform configuration for the app's GCP resources, in the project
-`lafeingcrokodil-diary` and the region `europe-west10` (Berlin).
+`lafeingcrokodil-diary` and the region `europe-west9` (Paris). Only the bucket
+for Terraform's state is in `europe-west10` (Berlin), where the app was
+originally hosted: a bucket's location can't be changed, and moving the state
+to a new bucket isn't worth it.
 
 Requires Terraform 1.17 or later and the [gcloud CLI](https://cloud.google.com/sdk/docs/install).
 
