@@ -17,6 +17,9 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      # The Go code embeds the built front end, which these jobs don't need, so
+      # a placeholder is enough for it to compile.
+      - run: make web/build/index.html
       - run: go vet ./...
       - run: go test -race ./...
 
@@ -27,6 +30,9 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      # The Go code embeds the built front end, which these jobs don't need, so
+      # a placeholder is enough for it to compile.
+      - run: make web/build/index.html
       - uses: golangci/golangci-lint-action@v9
         with:
           # Keep in sync with the version mentioned in the README.
