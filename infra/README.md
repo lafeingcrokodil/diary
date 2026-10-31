@@ -65,6 +65,9 @@ terraform plan
 terraform apply
 ```
 
+After applying, `terraform output service_url` prints the app's URL. Until the
+app is deployed, the service runs Google's placeholder "hello" image.
+
 When the project's spending reaches 50%, 90% and 100% of the monthly budget
 (€5 or $5 by default, in the billing account's currency), or is forecast to
 exceed it, the billing account's administrators and users get an email. To
