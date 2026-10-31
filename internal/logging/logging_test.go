@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"log/slog"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/lafeingcrokodil/diary/internal/logging"
 )
@@ -36,33 +38,17 @@ func TestNewHandler(t *testing.T) {
 
 			var entry map[string]any
 
-			err := json.Unmarshal(buf.Bytes(), &entry)
-			if err != nil {
-				t.Fatalf("parsing %q: %v", buf.String(), err)
-			}
+			require.NoError(t, json.Unmarshal(buf.Bytes(), &entry))
 
-			want := map[string]any{
+			assert.Subset(t, entry, map[string]any{
 				"severity": test.wantSeverity,
 				"message":  "hello",
 				"err":      "boom",
 				"req":      map[string]any{"message": "nested"},
-			}
-
-			for key, wantValue := range want {
-				if !reflect.DeepEqual(entry[key], wantValue) {
-					t.Errorf("%s = %v, want %v", key, entry[key], wantValue)
-				}
-			}
-
-			for _, key := range []string{"level", "msg"} {
-				if _, ok := entry[key]; ok {
-					t.Errorf("unexpected %q field in %q", key, buf.String())
-				}
-			}
-
-			if _, ok := entry["time"]; !ok {
-				t.Errorf("missing time field in %q", buf.String())
-			}
+			})
+			assert.Contains(t, entry, "time")
+			assert.NotContains(t, entry, "level")
+			assert.NotContains(t, entry, "msg")
 		})
 	}
 }
@@ -75,7 +61,5 @@ func TestNewHandlerLevel(t *testing.T) {
 	logger := slog.New(logging.NewHandler(&buf, slog.LevelInfo))
 	logger.DebugContext(t.Context(), "hidden")
 
-	if buf.Len() != 0 {
-		t.Errorf("got %q, want nothing below the handler's level", buf.String())
-	}
+	assert.Empty(t, buf.String(), "records below the handler's level should be dropped")
 }
