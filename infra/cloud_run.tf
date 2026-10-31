@@ -1,10 +1,17 @@
 # The identity that the app runs as. It only gets the roles that the app needs,
 # which so far are none.
-resource "google_service_account" "app" {
+resource "google_service_account" "app_runtime" {
   account_id  = "app-runtime"
   description = "Runs the Cloud Run service."
 
   depends_on = [google_project_service.services["iam.googleapis.com"]]
+}
+
+# The resource used to be called "app". This tells Terraform that it's the same
+# service account, so that it isn't deleted and recreated.
+moved {
+  from = google_service_account.app
+  to   = google_service_account.app_runtime
 }
 
 resource "google_cloud_run_v2_service" "app" {
@@ -17,7 +24,7 @@ resource "google_cloud_run_v2_service" "app" {
   invoker_iam_disabled = true
 
   template {
-    service_account = google_service_account.app.email
+    service_account = google_service_account.app_runtime.email
 
     # Scale to zero when idle, and cap the number of instances, which also
     # caps the cost.
