@@ -58,7 +58,7 @@ can each be reviewed comfortably on their own.
 
 - [x] Domain types and storage interface (in-memory implementation)
 - [x] CRUD API
-- [ ] Firestore implementation, tested against the emulator
+- [x] Firestore implementation, tested against the emulator
 - [ ] List and edit UI (calories and serving sizes only)
 
 ### M4 – Nutrients

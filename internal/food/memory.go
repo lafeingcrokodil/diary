@@ -1,12 +1,10 @@
 package food
 
 import (
-	"cmp"
 	"context"
 	"crypto/rand"
 	"maps"
 	"slices"
-	"strings"
 	"sync"
 )
 
@@ -64,12 +62,7 @@ func (s *MemoryStore) List(_ context.Context, owner string) ([]Food, error) {
 		}
 	}
 
-	slices.SortFunc(foods, func(a, b Food) int {
-		return cmp.Or(
-			cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name)),
-			cmp.Compare(a.ID, b.ID),
-		)
-	})
+	SortByName(foods)
 
 	return foods, nil
 }

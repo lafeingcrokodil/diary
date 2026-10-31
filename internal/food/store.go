@@ -1,8 +1,11 @@
 package food
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"slices"
+	"strings"
 )
 
 // ErrNotFound is returned when a food doesn't exist, or belongs to another
@@ -25,4 +28,15 @@ type Store interface {
 	Update(ctx context.Context, owner string, food Food) (Food, error)
 	// Delete removes one of owner's foods, or returns ErrNotFound.
 	Delete(ctx context.Context, owner, id string) error
+}
+
+// SortByName sorts foods by name, ignoring case, as Store.List returns them.
+// Foods with the same name are sorted by ID, so that the order is stable.
+func SortByName(foods []Food) {
+	slices.SortFunc(foods, func(a, b Food) int {
+		return cmp.Or(
+			cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name)),
+			cmp.Compare(a.ID, b.ID),
+		)
+	})
 }

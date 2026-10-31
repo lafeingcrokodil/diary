@@ -7,18 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lafeingcrokodil/diary/internal/food"
+	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
 )
-
-// bread returns a valid food, which tests change as they need.
-func bread() food.Food {
-	return food.Food{
-		Name:       "Rye bread",
-		Brand:      "Bakery",
-		Unit:       food.Grams,
-		KcalPer100: 210,
-		Servings:   []food.Serving{{Name: "slice", Amount: 40}, {Name: "loaf", Amount: 750}},
-	}
-}
 
 func TestValidate(t *testing.T) {
 	t.Parallel()
@@ -47,7 +37,7 @@ func TestValidate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			f := bread()
+			f := foodtest.Bread()
 			test.change(&f)
 
 			err := f.Validate()

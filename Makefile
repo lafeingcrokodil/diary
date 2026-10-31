@@ -1,4 +1,4 @@
-.PHONY: run build image web test cover vet lint
+.PHONY: run build image web test cover emulator vet lint
 
 # The Go binary embeds web/build, so the Go targets need that
 # directory to exist. If the front end hasn't been built, a placeholder page is
@@ -30,7 +30,8 @@ $(FRONTEND):
 
 # The minimum percentage of statements that the tests must cover in each
 # package in internal/. The other packages only wire things together, so they
-# aren't checked.
+# aren't checked, and neither are test helper packages (whose names end in
+# "test"), which only other packages' tests run.
 MIN_COVERAGE := 80
 
 test: $(FRONTEND)
@@ -43,6 +44,7 @@ cover: test
 	@awk -v min=$(MIN_COVERAGE) ' \
 		NR > 1 && $$1 ~ /\/internal\// { \
 			pkg = $$1; sub(/\/[^\/]*$$/, "", pkg); \
+			if (pkg ~ /test$$/) next; \
 			total[pkg] += $$2; if ($$3 > 0) covered[pkg] += $$2 \
 		} \
 		END { \
@@ -53,6 +55,11 @@ cover: test
 			} \
 			exit failed \
 		}' coverage.out
+
+# Runs the Firestore emulator, which the Firestore tests need: run them with
+# FIRESTORE_EMULATOR_HOST=localhost:8085 (they're skipped without it).
+emulator:
+	gcloud emulators firestore start --host-port=localhost:8085
 
 vet: $(FRONTEND)
 	go vet ./...
