@@ -29,8 +29,8 @@ can each be reviewed comfortably on their own.
 
 ### M0 – Walking skeleton
 
-- [ ] Go module, `/healthz` endpoint, test, Makefile, roadmap
-- [ ] GitHub Actions CI (`go vet`, `go test`, linter)
+- [x] Go module, `/healthz` endpoint, test, Makefile, roadmap
+- [x] GitHub Actions CI (`go vet`, `go test`, `golangci-lint`)
 - [ ] Svelte + TypeScript app served by the Go binary, local dev setup
 - [ ] Dockerfile
 

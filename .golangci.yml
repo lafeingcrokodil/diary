@@ -1,0 +1,31 @@
+version: "2"
+
+linters:
+  # Start with every linter enabled, then disable the ones we decide we don't
+  # want, with a comment explaining why.
+  default: all
+  disable:
+    # Deprecated in favour of exhaustruct_v5, gomodguard_v2 and wsl_v5.
+    - exhaustruct
+    - gomodguard
+    - wsl
+    # Requiring every struct field to be set makes literals of external types
+    # (e.g. http.Server) noisy, and we rely on zero values.
+    - exhaustruct_v5
+    # Without explicit rules, depguard only allows the standard library, which
+    # would even block imports of our own packages. New dependencies get
+    # reviewed in PRs anyway.
+    - depguard
+    # Requiring a blank line before every return adds noise to short
+    # functions without making them easier to read. (wsl_v5's return check
+    # is disabled below for the same reason.)
+    - nlreturn
+  settings:
+    wsl_v5:
+      disable:
+        - return
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
