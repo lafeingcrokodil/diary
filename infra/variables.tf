@@ -7,7 +7,7 @@ variable "project_id" {
 variable "region" {
   description = "Region for the app's resources."
   type        = string
-  default     = "europe-west10"
+  default     = "europe-west9"
 }
 
 variable "billing_account" {
