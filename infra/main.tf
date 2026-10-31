@@ -47,8 +47,3 @@ resource "google_project_service" "cloudresourcemanager" {
   service            = "cloudresourcemanager.googleapis.com"
   disable_on_destroy = false
 }
-
-moved {
-  from = google_project_service.services["cloudresourcemanager.googleapis.com"]
-  to   = google_project_service.cloudresourcemanager
-}
