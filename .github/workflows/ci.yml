@@ -74,3 +74,18 @@ jobs:
           done
           curl --fail --silent --show-error localhost:8080/healthz
           curl --fail --silent --show-error localhost:8080/ | grep --quiet '<html'
+
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.17.1
+      - run: terraform fmt -check -recursive
+      # Validation doesn't need access to the state bucket.
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate

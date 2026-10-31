@@ -8,8 +8,9 @@ See [docs/roadmap.md](docs/roadmap.md) for the plan.
 ## Development
 
 The Go back end lives in the repository root; the SvelteKit front end lives in
-[`web/`](web/README.md). The Go binary embeds the built front end and serves it,
-so the deployed app is a single binary.
+[`web/`](web/README.md), and the Terraform configuration for GCP lives in
+[`infra/`](infra/README.md). The Go binary embeds the built front end and serves
+it, so the deployed app is a single binary.
 
 Requires:
 

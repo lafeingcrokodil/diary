@@ -38,9 +38,10 @@ can each be reviewed comfortably on their own.
 
 ### M1 – Deployed to GCP
 
-- [ ] Terraform state bucket and API enablement
+- [x] Terraform state bucket and API enablement
 - [ ] Artifact Registry and Cloud Run
 - [ ] Continuous deployment from `main` via Workload Identity Federation
+- [ ] Budget alert
 
 ### M2 – Authentication
 

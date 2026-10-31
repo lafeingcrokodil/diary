@@ -1,1 +1,5 @@
 /bin
+# Terraform's working directory and any local state.
+.terraform/
+*.tfstate
+*.tfstate.*
