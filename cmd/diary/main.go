@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
+	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/logging"
 	"github.com/lafeingcrokodil/diary/internal/server"
 	"github.com/lafeingcrokodil/diary/web"
@@ -46,9 +47,12 @@ func main() {
 	// The verifier fetches signing keys as needed for as long as the server runs.
 	verifier := auth.NewFirebaseVerifier(context.Background(), projectID)
 
+	// Foods are kept in memory, so they're lost whenever the server stops.
+	foods := food.NewMemoryStore()
+
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           server.New(frontend, auth.Middleware(verifier, allowedEmails)),
+		Handler:           server.New(frontend, auth.Middleware(verifier, allowedEmails), foods),
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 

@@ -57,7 +57,7 @@ can each be reviewed comfortably on their own.
 ### M3 – Foods
 
 - [x] Domain types and storage interface (in-memory implementation)
-- [ ] CRUD API
+- [x] CRUD API
 - [ ] Firestore implementation, tested against the emulator
 - [ ] List and edit UI (calories and serving sizes only)
 

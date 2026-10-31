@@ -4,21 +4,21 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
+	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
 const (
 	indexHTML = "<h1>Diary</h1>"
-	// signedIn is the Authorization header that fakeAuth lets through.
-	signedIn = "Bearer valid"
-	userID   = "user-123"
-	email    = "me@example.com"
+	// signedIn is an Authorization header that fakeAuth lets through.
+	signedIn = "Bearer user-123"
 )
 
 type testCase struct {
@@ -58,7 +58,7 @@ func TestMe(t *testing.T) {
 	runTests(t, []testCase{
 		{
 			name: "signed in", path: "/api/me", authHeader: signedIn,
-			wantStatus: http.StatusOK, wantBody: `{"id":"user-123","email":"me@example.com"}` + "\n",
+			wantStatus: http.StatusOK, wantBody: `{"id":"user-123","email":"user-123@example.com"}` + "\n",
 		},
 		{name: "not signed in", path: "/api/me", wantStatus: http.StatusUnauthorized},
 		{
@@ -78,16 +78,19 @@ func TestUnknownAPIRoute(t *testing.T) {
 	})
 }
 
-// fakeAuth stands in for auth.Middleware: it lets through requests with the
-// signedIn header, as the user with the ID userID and the address email.
+// fakeAuth stands in for auth.Middleware: it lets through any request with an
+// "Authorization: Bearer <user ID>" header, as that user, with the email
+// address <user ID>@example.com.
 func fakeAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		if req.Header.Get("Authorization") != signedIn {
+		userID, ok := strings.CutPrefix(req.Header.Get("Authorization"), "Bearer ")
+		if !ok || userID == "" {
 			http.Error(resp, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
-		next.ServeHTTP(resp, req.WithContext(auth.WithUser(req.Context(), auth.User{ID: userID, Email: email})))
+		user := auth.User{ID: userID, Email: userID + "@example.com"}
+		next.ServeHTTP(resp, req.WithContext(auth.WithUser(req.Context(), user)))
 	})
 }
 
@@ -102,7 +105,7 @@ func runTests(t *testing.T, tests []testCase) {
 		"index.html":     {Data: []byte(indexHTML)},
 		"_app/app.js":    {Data: []byte("console.log('hi');")},
 		"_app/immutable": {Mode: fs.ModeDir},
-	}, fakeAuth)
+	}, fakeAuth, food.NewMemoryStore())
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
