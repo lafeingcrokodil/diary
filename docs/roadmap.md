@@ -51,6 +51,8 @@ can each be reviewed comfortably on their own.
       one-off step in the Firebase console)
 - [x] Front-end sign-in flow
 - [x] Go middleware verifying ID tokens against an email allowlist
+- [x] Front end sending the ID token to the API, and showing whether the
+      account is allowed
 
 ### M3 – Foods
 

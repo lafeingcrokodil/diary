@@ -78,3 +78,13 @@ export const signIn = async (): Promise<void> => {
 export const signOut = async (): Promise<void> => {
 	await firebaseSignOut(requireAuth());
 };
+
+// Returns an ID token for the signed-in user, which proves to the API who they
+// are. Firebase refreshes the token when it's about to expire.
+export const idToken = async (): Promise<string> => {
+	const user = requireAuth().currentUser;
+	if (user === null) {
+		throw new Error('Nobody is signed in.');
+	}
+	return user.getIdToken();
+};
