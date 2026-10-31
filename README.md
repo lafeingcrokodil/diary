@@ -20,8 +20,9 @@ Requires:
 - the front end's requirements (see [`web/README.md`](web/README.md)), for the
   targets that build it
 - the [gcloud CLI](https://cloud.google.com/sdk/docs/install) with the
-  `cloud-firestore-emulator` component, and Java 21 or later, for the Firestore
-  tests (see below)
+  `cloud-firestore-emulator` component, and Java 25 or later, for the Firestore
+  tests (see below). Java 21 still works, but the emulator stops supporting it
+  after gcloud 576.0.0.
 
 ```bash
 make run      # build the front end and start the server on http://localhost:8080 (see below)
