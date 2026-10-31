@@ -20,12 +20,13 @@ type testCase struct {
 	wantBody   string
 }
 
-func TestHealthz(t *testing.T) {
+func TestHealth(t *testing.T) {
 	t.Parallel()
 
 	runTests(t, []testCase{
-		{name: "GET succeeds", method: http.MethodGet, path: "/healthz", wantStatus: http.StatusOK, wantBody: "ok\n"},
-		{name: "POST is rejected", method: http.MethodPost, path: "/healthz", wantStatus: http.StatusMethodNotAllowed},
+		{name: "GET succeeds", method: http.MethodGet, path: "/health", wantStatus: http.StatusOK, wantBody: "ok\n"},
+		{name: "POST is rejected", method: http.MethodPost, path: "/health", wantStatus: http.StatusMethodNotAllowed},
+		{name: "old path still works", method: http.MethodGet, path: "/healthz", wantStatus: http.StatusOK, wantBody: "ok\n"},
 	})
 }
 
