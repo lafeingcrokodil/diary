@@ -21,7 +21,7 @@ jobs:
       # a placeholder is enough for it to compile.
       - run: make web/build/index.html
       - run: go vet ./...
-      - run: go test -race ./...
+      - run: make cover
 
   lint:
     runs-on: ubuntu-latest

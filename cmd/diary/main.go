@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
+	"github.com/lafeingcrokodil/diary/internal/logging"
 	"github.com/lafeingcrokodil/diary/internal/server"
 	"github.com/lafeingcrokodil/diary/web"
 )
@@ -23,6 +24,8 @@ const readHeaderTimeout = 10 * time.Second
 var errMissingEnv = errors.New("required environment variable not set")
 
 func main() {
+	slog.SetDefault(slog.New(logging.NewHandler(os.Stdout, slog.LevelInfo)))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
