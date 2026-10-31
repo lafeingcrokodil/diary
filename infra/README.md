@@ -147,6 +147,14 @@ the app's API: Terraform passes them to the Cloud Run service, along with the
 Firebase project, as environment variables. Anyone else can sign in, but gets
 a 403 from the API.
 
+## Database
+
+The app keeps its data in the project's default Firestore database (Native
+mode), in the same region as the Cloud Run service. Its location can't be
+changed once it exists. Delete protection is on, and Terraform leaves the
+database in place even if its resource is removed, so it can't be deleted by
+accident.
+
 ## Budget
 
 When the project's spending reaches 50%, 90% and 100% of the monthly budget

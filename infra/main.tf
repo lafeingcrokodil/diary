@@ -22,6 +22,7 @@ locals {
     "billingbudgets.googleapis.com",   # Budget alerts
     "firebase.googleapis.com",         # Firebase
     "firebasehosting.googleapis.com",  # Firebase Hosting
+    "firestore.googleapis.com",        # Firestore
     "iam.googleapis.com",              # Service accounts, workload identity pools
     "iamcredentials.googleapis.com",   # Short-lived credentials for GitHub Actions
     "identitytoolkit.googleapis.com",  # Firebase Authentication (Identity Platform)

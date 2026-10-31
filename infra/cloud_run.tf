@@ -1,5 +1,4 @@
-# The identity that the app runs as. It only gets the roles that the app needs,
-# which so far are none.
+# The identity that the app runs as. It only gets the roles that the app needs.
 resource "google_service_account" "app_runtime" {
   account_id  = "app-runtime"
   description = "Runs the Cloud Run service."
