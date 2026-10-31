@@ -12,9 +12,13 @@ enabled, it's picked up automatically).
 
 ```bash
 pnpm install   # install dependencies
-pnpm dev       # start a dev server on http://localhost:5173
+pnpm dev       # start a dev server on http://localhost:5173 (see below)
 pnpm check     # type-check
 pnpm lint      # check formatting (Prettier) and lint (ESLint)
 pnpm format    # fix formatting
 pnpm build     # build the app into build/
 ```
+
+In development, the dev server forwards requests under `/api` to the Go server
+on http://localhost:8080 (see the [root README](../README.md)). In production,
+the Go server serves the built app itself.
