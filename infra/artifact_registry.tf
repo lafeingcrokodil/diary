@@ -1,5 +1,5 @@
 resource "google_artifact_registry_repository" "images" {
-  repository_id = "diary"
+  repository_id = "app"
   location      = var.region
   format        = "DOCKER"
   description   = "Container images of the app."

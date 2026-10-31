@@ -1,15 +1,14 @@
 # The identity that the app runs as. It only gets the roles that the app needs,
 # which so far are none.
 resource "google_service_account" "app" {
-  account_id   = "diary-app"
-  display_name = "Diary app"
-  description  = "Runs the Cloud Run service."
+  account_id  = "app-runtime"
+  description = "Runs the Cloud Run service."
 
   depends_on = [google_project_service.services["iam.googleapis.com"]]
 }
 
 resource "google_cloud_run_v2_service" "app" {
-  name     = "diary"
+  name     = "app"
   location = var.region
 
   # Anyone can reach the service without authenticating with Google Cloud, so
