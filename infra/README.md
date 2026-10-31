@@ -14,7 +14,7 @@ be done once.
    accounts list` shows the account ID):
 
    ```bash
-   gcloud projects create lafeingcrokodil-diary
+   gcloud projects create lafeingcrokodil-diary --name="Diary"
    ```
 
    ```bash
