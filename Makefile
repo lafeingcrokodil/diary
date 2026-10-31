@@ -1,4 +1,4 @@
-.PHONY: run build image web test vet lint
+.PHONY: run build image web test cover vet lint
 
 # The Go binary embeds web/build, so the Go targets need that
 # directory to exist. If the front end hasn't been built, a placeholder page is
@@ -24,8 +24,31 @@ $(FRONTEND):
 	mkdir -p web/build
 	echo '<!doctype html><title>Diary</title><p>The front end has not been built. Run make web.</p>' > $@
 
+# The minimum percentage of statements that the tests must cover in each
+# package in internal/. The other packages only wire things together, so they
+# aren't checked.
+MIN_COVERAGE := 80
+
 test: $(FRONTEND)
-	go test -race ./...
+	go test -race -coverprofile=coverage.out ./...
+
+# Runs the tests and fails if any package in internal/ has less than
+# MIN_COVERAGE coverage. Each line of the profile after the first is
+# "file:range statements count", and a package is its file's directory.
+cover: test
+	@awk -v min=$(MIN_COVERAGE) ' \
+		NR > 1 && $$1 ~ /\/internal\// { \
+			pkg = $$1; sub(/\/[^\/]*$$/, "", pkg); \
+			total[pkg] += $$2; if ($$3 > 0) covered[pkg] += $$2 \
+		} \
+		END { \
+			for (pkg in total) { \
+				pct = total[pkg] ? 100 * covered[pkg] / total[pkg] : 100; \
+				printf "%s: %.1f%% (minimum %d%%)\n", pkg, pct, min; \
+				if (pct < min) failed = 1 \
+			} \
+			exit failed \
+		}' coverage.out
 
 vet: $(FRONTEND)
 	go vet ./...
