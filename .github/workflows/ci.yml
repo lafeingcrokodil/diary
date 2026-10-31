@@ -89,3 +89,36 @@ jobs:
       # Validation doesn't need access to the state bucket.
       - run: terraform init -backend=false -input=false
       - run: terraform validate
+
+  deploy:
+    # Deploy every push to main, once all other jobs have passed.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, lint, web, image, terraform]
+    runs-on: ubuntu-latest
+    # Run one deployment at a time, so that an older commit can't overwrite a
+    # newer one.
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      # Lets the job request GitHub's OIDC token, which workload identity
+      # federation exchanges for Google Cloud credentials.
+      id-token: write
+    env:
+      IMAGE: europe-west10-docker.pkg.dev/lafeingcrokodil-diary/main/app:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: gcloud auth configure-docker europe-west10-docker.pkg.dev --quiet
+      - run: docker build --tag "$IMAGE" .
+      - run: docker push "$IMAGE"
+      - run: >-
+          gcloud run services update app
+          --project=lafeingcrokodil-diary
+          --region=europe-west10
+          --image="$IMAGE"
