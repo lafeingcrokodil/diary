@@ -10,6 +10,10 @@ import (
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
+// readHeaderTimeout limits how long a client may take to send request headers,
+// which protects against Slowloris-style attacks.
+const readHeaderTimeout = 10 * time.Second
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -19,12 +23,13 @@ func main() {
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           server.New(),
-		ReadHeaderTimeout: 10 * time.Second,
+		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
 	slog.Info("starting server", "addr", srv.Addr)
-	if err := srv.ListenAndServe(); err != nil {
-		slog.Error("server stopped", "err", err)
-		os.Exit(1)
-	}
+
+	// ListenAndServe only ever returns a non-nil error.
+	err := srv.ListenAndServe()
+	slog.Error("server stopped", "err", err)
+	os.Exit(1)
 }
