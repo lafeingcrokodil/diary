@@ -18,15 +18,14 @@ provider "google-beta" {
 
 locals {
   services = [
-    "artifactregistry.googleapis.com",     # Container images
-    "billingbudgets.googleapis.com",       # Budget alerts
-    "cloudresourcemanager.googleapis.com", # Looking up the project number
-    "firebase.googleapis.com",             # Firebase
-    "firebasehosting.googleapis.com",      # Firebase Hosting
-    "iam.googleapis.com",                  # Service accounts, workload identity pools
-    "iamcredentials.googleapis.com",       # Short-lived credentials for GitHub Actions
-    "run.googleapis.com",                  # Cloud Run
-    "sts.googleapis.com",                  # Token exchange for workload identity federation
+    "artifactregistry.googleapis.com", # Container images
+    "billingbudgets.googleapis.com",   # Budget alerts
+    "firebase.googleapis.com",         # Firebase
+    "firebasehosting.googleapis.com",  # Firebase Hosting
+    "iam.googleapis.com",              # Service accounts, workload identity pools
+    "iamcredentials.googleapis.com",   # Short-lived credentials for GitHub Actions
+    "run.googleapis.com",              # Cloud Run
+    "sts.googleapis.com",              # Token exchange for workload identity federation
   ]
 }
 
@@ -38,4 +37,18 @@ resource "google_project_service" "services" {
   # Keep the APIs enabled if this resource is removed, since other resources
   # may still depend on them.
   disable_on_destroy = false
+}
+
+# Used to look up the project number. It's separate from the other APIs, so
+# that the lookup only waits for this API: depends_on applies to all instances
+# of a resource, so depending on the list above would defer the lookup to the
+# apply phase whenever an API is added to it.
+resource "google_project_service" "cloudresourcemanager" {
+  service            = "cloudresourcemanager.googleapis.com"
+  disable_on_destroy = false
+}
+
+moved {
+  from = google_project_service.services["cloudresourcemanager.googleapis.com"]
+  to   = google_project_service.cloudresourcemanager
 }

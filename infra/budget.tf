@@ -1,6 +1,6 @@
 data "google_project" "project" {
   # The project number is looked up through this API.
-  depends_on = [google_project_service.services["cloudresourcemanager.googleapis.com"]]
+  depends_on = [google_project_service.cloudresourcemanager]
 }
 
 resource "google_billing_budget" "monthly" {
