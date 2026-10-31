@@ -17,7 +17,7 @@ import (
 //
 // Every request under /api/ goes through authenticate, which must only pass on
 // requests from allowed users, with their email address in the context (see
-// auth.WithEmail).
+// auth.WithUser).
 func New(frontend fs.FS, authenticate func(http.Handler) http.Handler) http.Handler {
 	// The API's own mux responds with a 404 to unknown routes, and a 405 to
 	// known routes with other methods.
@@ -41,16 +41,17 @@ func handleHealth(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok\n"))
 }
 
-// user describes the signed-in user.
-type user struct {
+// me describes the signed-in user.
+type me struct {
+	ID    string `json:"id"`
 	Email string `json:"email"`
 }
 
 // handleMe responds with the signed-in user.
 func handleMe(resp http.ResponseWriter, req *http.Request) {
-	email, ok := auth.Email(req.Context())
+	user, ok := auth.UserFrom(req.Context())
 	if !ok {
-		slog.ErrorContext(req.Context(), "no email in the context of an authenticated request")
+		slog.ErrorContext(req.Context(), "no user in the context of an authenticated request")
 		http.Error(resp, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 
 		return
@@ -58,7 +59,7 @@ func handleMe(resp http.ResponseWriter, req *http.Request) {
 
 	resp.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(resp).Encode(user{Email: email}); err != nil {
+	if err := json.NewEncoder(resp).Encode(me{ID: user.ID, Email: user.Email}); err != nil {
 		slog.ErrorContext(req.Context(), "writing response", "err", err)
 	}
 }
