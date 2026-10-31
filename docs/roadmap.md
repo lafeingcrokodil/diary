@@ -39,7 +39,7 @@ can each be reviewed comfortably on their own.
 ### M1 – Deployed to GCP
 
 - [x] Terraform state bucket and API enablement
-- [ ] Artifact Registry and Cloud Run
+- [x] Artifact Registry and Cloud Run
 - [ ] Continuous deployment from `main` via Workload Identity Federation
 - [x] Budget alert
 
