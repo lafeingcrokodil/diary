@@ -25,3 +25,9 @@ variable "monthly_budget" {
     error_message = "The monthly budget must be a positive whole number."
   }
 }
+
+variable "domain" {
+  description = "Custom domain that the app is served on."
+  type        = string
+  default     = "diary.lafeingcrokodil.com"
+}

@@ -95,6 +95,24 @@ gh variable set GCP_WORKLOAD_IDENTITY_PROVIDER --body "$(terraform output -raw w
 gh variable set GCP_DEPLOYER_SERVICE_ACCOUNT --body "$(terraform output -raw deployer_service_account)"
 ```
 
+## Custom domain
+
+Firebase Hosting serves the app on `diary.lafeingcrokodil.com` (the `domain`
+variable), forwarding every request to the Cloud Run service. After applying,
+add the DNS records that Firebase needs to verify the domain and point it to
+Hosting:
+
+```bash
+terraform output custom_domain_dns_updates
+```
+
+In Cloudflare, add each record under the domain's DNS settings, with the
+proxy status set to **DNS only** (grey cloud). With Cloudflare's proxy on, the
+domain resolves to Cloudflare's addresses instead of Firebase's, so Firebase
+can't verify it or issue a certificate for it. Remove any other A, AAAA or
+CNAME records for the same name. Verification and the certificate can take up
+to 24 hours, though usually only a few hours.
+
 ## Budget
 
 When the project's spending reaches 50%, 90% and 100% of the monthly budget

@@ -6,6 +6,12 @@ terraform {
       source  = "hashicorp/google"
       version = "8.7.0"
     }
+    # Some Firebase resources (e.g. Hosting) are only available in the beta
+    # provider.
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "8.7.0"
+    }
   }
 
   # The state bucket can't be managed by the configuration that stores its

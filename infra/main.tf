@@ -9,11 +9,20 @@ provider "google" {
   billing_project       = var.project_id
 }
 
+provider "google-beta" {
+  project               = var.project_id
+  region                = var.region
+  user_project_override = true
+  billing_project       = var.project_id
+}
+
 locals {
   services = [
     "artifactregistry.googleapis.com",     # Container images
     "billingbudgets.googleapis.com",       # Budget alerts
     "cloudresourcemanager.googleapis.com", # Looking up the project number
+    "firebase.googleapis.com",             # Firebase
+    "firebasehosting.googleapis.com",      # Firebase Hosting
     "iam.googleapis.com",                  # Service accounts, workload identity pools
     "iamcredentials.googleapis.com",       # Short-lived credentials for GitHub Actions
     "run.googleapis.com",                  # Cloud Run
