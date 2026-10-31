@@ -5,11 +5,10 @@
 # This configuration can only be created once per project, and can't be
 # deleted.
 resource "google_identity_platform_config" "default" {
-  # Domains from which the sign-in flow can be started.
+  # Domains from which the sign-in flow can be started: the app's domain, and
+  # localhost for the front end's dev server.
   authorized_domains = [
     var.domain,
-    "${var.project_id}.web.app",
-    "${var.project_id}.firebaseapp.com",
     "localhost",
   ]
 
