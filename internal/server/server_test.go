@@ -7,6 +7,8 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/lafeingcrokodil/diary/internal/auth"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
@@ -114,12 +116,10 @@ func runTests(t *testing.T, tests []testCase) {
 
 			handler.ServeHTTP(rec, req)
 
-			if rec.Code != test.wantStatus {
-				t.Errorf("status = %d, want %d", rec.Code, test.wantStatus)
-			}
+			assert.Equal(t, test.wantStatus, rec.Code)
 
-			if test.wantBody != "" && rec.Body.String() != test.wantBody {
-				t.Errorf("body = %q, want %q", rec.Body.String(), test.wantBody)
+			if test.wantBody != "" {
+				assert.Equal(t, test.wantBody, rec.Body.String())
 			}
 		})
 	}
