@@ -7,6 +7,11 @@ See [docs/roadmap.md](docs/roadmap.md) for the plan.
 
 ## Development
 
+The Go back end lives in the repository root; the SvelteKit front end lives in
+[`web/`](web/README.md).
+
+### Back end
+
 Requires:
 
 - the Go version specified in `go.mod`, or later

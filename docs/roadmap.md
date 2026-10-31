@@ -13,9 +13,10 @@ can each be reviewed comfortably on their own.
   implementation (for unit tests) and a Firestore implementation (tested
   against the Firestore emulator). Switching databases means adding another
   implementation.
-- **Front end:** Svelte + TypeScript, built with Vite, mobile-first. The built
-  assets are embedded into the Go binary with `go:embed`, so the whole app is
-  a single container: no separate hosting, no CORS.
+- **Front end:** SvelteKit + TypeScript, built as a single-page app with
+  `adapter-static`, mobile-first. The built assets are embedded into the Go
+  binary with `go:embed`, so the whole app is a single container: no separate
+  hosting, no CORS.
 - **Auth:** Firebase Authentication with the Google provider. The front end
   obtains an ID token; the Go server verifies it and checks the email against
   an allowlist.
@@ -31,7 +32,8 @@ can each be reviewed comfortably on their own.
 
 - [x] Go module, `/healthz` endpoint, test, Makefile, roadmap
 - [x] GitHub Actions CI (`go vet`, `go test`, `golangci-lint`)
-- [ ] Svelte + TypeScript app served by the Go binary, local dev setup
+- [x] SvelteKit + TypeScript app scaffold, with linting in CI
+- [ ] Serve the front end from the Go binary, local dev setup
 - [ ] Dockerfile
 
 ### M1 – Deployed to GCP
