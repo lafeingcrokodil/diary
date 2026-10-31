@@ -58,3 +58,19 @@ jobs:
       - run: pnpm check
       - run: pnpm lint
       - run: pnpm build
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build --tag diary .
+      - name: Check that the image serves the app
+        run: |
+          docker run --detach --publish 8080:8080 diary
+          # Give the server a few seconds to start.
+          for attempt in 1 2 3 4 5; do
+            curl --fail --silent localhost:8080/healthz && break
+            sleep 1
+          done
+          curl --fail --silent --show-error localhost:8080/healthz
+          curl --fail --silent --show-error localhost:8080/ | grep --quiet '<html'

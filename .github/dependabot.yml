@@ -23,6 +23,17 @@ updates:
       actions:
         update-types: [minor, patch]
 
+  # Base images in the Dockerfile.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    groups:
+      docker:
+        update-types: [minor, patch]
+
   # pnpm uses the npm ecosystem.
   - package-ecosystem: npm
     directory: /web

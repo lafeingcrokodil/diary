@@ -34,7 +34,7 @@ can each be reviewed comfortably on their own.
 - [x] GitHub Actions CI (`go vet`, `go test`, `golangci-lint`)
 - [x] SvelteKit + TypeScript app scaffold, with linting in CI
 - [x] Serve the front end from the Go binary, local dev setup
-- [ ] Dockerfile
+- [x] Dockerfile
 
 ### M1 – Deployed to GCP
 

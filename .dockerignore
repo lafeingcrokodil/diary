@@ -1,0 +1,10 @@
+# Only send the files that the image build needs to Docker.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!web/
+web/node_modules/
+web/build/
+web/.svelte-kit/
