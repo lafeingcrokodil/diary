@@ -11,6 +11,11 @@ resource "google_cloud_run_v2_service" "app" {
   name     = "app"
   location = var.region
 
+  # The service holds no data and can be recreated from this configuration and
+  # an image, so deletion protection would only get in the way of changes that
+  # replace it (e.g. moving it to another region).
+  deletion_protection = false
+
   # Anyone can reach the service without authenticating with Google Cloud, so
   # any access control is up to the app.
   ingress              = "INGRESS_TRAFFIC_ALL"
