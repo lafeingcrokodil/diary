@@ -26,6 +26,16 @@ variable "monthly_budget" {
   }
 }
 
+variable "allowed_emails" {
+  description = "Email addresses of the Google accounts that are allowed to use the app."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.allowed_emails) > 0 && alltrue([for email in var.allowed_emails : !strcontains(email, ",")])
+    error_message = "At least one email address is required, and the addresses can't contain commas."
+  }
+}
+
 variable "domain" {
   description = "Custom domain that the app is served on."
   type        = string

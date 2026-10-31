@@ -2,22 +2,36 @@
 package server
 
 import (
+	"encoding/json"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"path"
 	"strings"
+
+	"github.com/lafeingcrokodil/diary/internal/auth"
 )
 
 // New returns an http.Handler that serves all of the app's routes, plus the
 // front end from the given files, which must include an index.html.
-func New(frontend fs.FS) http.Handler {
+//
+// Every request under /api/ goes through authenticate, which must only pass on
+// requests from allowed users, with their email address in the context (see
+// auth.WithEmail).
+func New(frontend fs.FS, authenticate func(http.Handler) http.Handler) http.Handler {
+	// The API's own mux responds with a 404 to unknown routes, and a 405 to
+	// known routes with other methods.
+	api := http.NewServeMux()
+	api.HandleFunc("GET /api/me", handleMe)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", handleHealth)
 	// Unknown API routes get a 404 rather than the front end.
-	mux.Handle("/api/", http.NotFoundHandler())
+	mux.Handle("/api/", authenticate(api))
 	// This can't be "GET /", because ServeMux would reject it as conflicting
 	// with "/api/", so handleFrontend checks the method itself.
 	mux.Handle("/", handleFrontend(frontend))
+
 	return mux
 }
 
@@ -25,6 +39,29 @@ func New(frontend fs.FS) http.Handler {
 func handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	_, _ = w.Write([]byte("ok\n"))
+}
+
+// user describes the signed-in user.
+type user struct {
+	Email string `json:"email"`
+}
+
+// handleMe responds with the signed-in user.
+func handleMe(resp http.ResponseWriter, req *http.Request) {
+	email, ok := auth.Email(req.Context())
+	if !ok {
+		slog.ErrorContext(req.Context(), "no email in the context of an authenticated request")
+		http.Error(resp, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
+		return
+	}
+
+	resp.Header().Set("Content-Type", "application/json")
+
+	err := json.NewEncoder(resp).Encode(user{Email: email})
+	if err != nil {
+		slog.ErrorContext(req.Context(), "writing response", "err", err)
+	}
 }
 
 // handleFrontend serves a single-page app: requests for existing files get

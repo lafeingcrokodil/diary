@@ -66,7 +66,12 @@ jobs:
       - run: docker build --tag diary .
       - name: Check that the image serves the app
         run: |
-          docker run --detach --publish 8080:8080 diary
+          # The server requires its auth configuration, but these checks
+          # don't call the API, so any values will do.
+          docker run --detach --publish 8080:8080 \
+            --env FIREBASE_PROJECT_ID=test \
+            --env ALLOWED_EMAILS=nobody@example.com \
+            diary
           # Give the server a few seconds to start.
           for attempt in 1 2 3 4 5; do
             curl --fail --silent localhost:8080/health && break

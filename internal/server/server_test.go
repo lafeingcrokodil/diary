@@ -7,15 +7,22 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/lafeingcrokodil/diary/internal/auth"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
-const indexHTML = "<h1>Diary</h1>"
+const (
+	indexHTML = "<h1>Diary</h1>"
+	// signedIn is the Authorization header that fakeAuth lets through.
+	signedIn = "Bearer valid"
+	email    = "me@example.com"
+)
 
 type testCase struct {
 	name       string
 	method     string
 	path       string
+	authHeader string
 	wantStatus int
 	wantBody   string
 }
@@ -42,18 +49,49 @@ func TestFrontend(t *testing.T) {
 	})
 }
 
+func TestMe(t *testing.T) {
+	t.Parallel()
+
+	runTests(t, []testCase{
+		{
+			name: "signed in", path: "/api/me", authHeader: signedIn,
+			wantStatus: http.StatusOK, wantBody: `{"email":"me@example.com"}` + "\n",
+		},
+		{name: "not signed in", path: "/api/me", wantStatus: http.StatusUnauthorized},
+		{
+			name: "POST is rejected", method: http.MethodPost, path: "/api/me", authHeader: signedIn,
+			wantStatus: http.StatusMethodNotAllowed,
+		},
+	})
+}
+
 func TestUnknownAPIRoute(t *testing.T) {
 	t.Parallel()
 
 	runTests(t, []testCase{
-		{name: "GET", path: "/api/unknown", wantStatus: http.StatusNotFound},
-		{name: "POST", method: http.MethodPost, path: "/api/unknown", wantStatus: http.StatusNotFound},
+		{name: "GET", path: "/api/unknown", authHeader: signedIn, wantStatus: http.StatusNotFound},
+		{name: "POST", method: http.MethodPost, path: "/api/unknown", authHeader: signedIn, wantStatus: http.StatusNotFound},
+		{name: "not signed in", path: "/api/unknown", wantStatus: http.StatusUnauthorized},
+	})
+}
+
+// fakeAuth stands in for auth.Middleware: it lets through requests with the
+// signedIn header, as the user with the address email.
+func fakeAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		if req.Header.Get("Authorization") != signedIn {
+			http.Error(resp, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(resp, req.WithContext(auth.WithEmail(req.Context(), email)))
 	})
 }
 
 // runTests sends each test case's request to a server with a small front end,
-// and checks the response. An empty method means GET, and an empty wantBody
-// means that the body isn't checked.
+// and checks the response. An empty method means GET, an empty authHeader
+// means that the request isn't signed in, and an empty wantBody means that the
+// body isn't checked.
 func runTests(t *testing.T, tests []testCase) {
 	t.Helper()
 
@@ -61,13 +99,17 @@ func runTests(t *testing.T, tests []testCase) {
 		"index.html":     {Data: []byte(indexHTML)},
 		"_app/app.js":    {Data: []byte("console.log('hi');")},
 		"_app/immutable": {Mode: fs.ModeDir},
-	})
+	}, fakeAuth)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			req := httptest.NewRequestWithContext(t.Context(), test.method, test.path, nil)
+			if test.authHeader != "" {
+				req.Header.Set("Authorization", test.authHeader)
+			}
+
 			rec := httptest.NewRecorder()
 
 			handler.ServeHTTP(rec, req)

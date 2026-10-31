@@ -24,6 +24,13 @@ linters:
     wsl_v5:
       disable:
         - return
+  exclusions:
+    rules:
+      # Table-driven tests repeat paths and test names in their cases, which
+      # are easier to read as literals than as constants.
+      - path: _test\.go
+        linters:
+          - goconst
 
 formatters:
   enable:

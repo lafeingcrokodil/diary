@@ -21,7 +21,7 @@ Requires:
   targets that build it
 
 ```bash
-make run    # build the front end and start the server on http://localhost:8080
+make run    # build the front end and start the server on http://localhost:8080 (see below)
 make build  # build the front end and a server binary (bin/diary)
 make image  # build the container image (diary), which needs only Docker
 make web    # build only the front end
@@ -29,6 +29,12 @@ make test   # run the tests
 make vet    # run go vet
 make lint   # run golangci-lint (see .golangci.yml)
 ```
+
+The server only lets allowed users use its API, so it needs their
+comma-separated email addresses in `ALLOWED_EMAILS`, e.g.
+`ALLOWED_EMAILS=you@example.com make run`. It checks sign-ins against the
+Firebase project in `FIREBASE_PROJECT_ID`, which `make run` sets to the app's
+project unless it's already set.
 
 `make test`, `make vet` and `make lint` don't need the front end: if it hasn't
 been built, they create a placeholder page so that the Go code compiles.
@@ -39,7 +45,7 @@ For instant reloading while you edit the front end, run the Go server and Vite's
 dev server side by side:
 
 ```bash
-make run              # Go server on http://localhost:8080
+ALLOWED_EMAILS=you@example.com make run   # Go server on http://localhost:8080
 ```
 
 ```bash

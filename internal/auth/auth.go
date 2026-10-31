@@ -42,6 +42,12 @@ type claims struct {
 
 type emailKey struct{}
 
+// WithEmail returns a copy of ctx that carries the email address of the user
+// making the request, which Email returns.
+func WithEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, emailKey{}, email)
+}
+
 // Email returns the email address of the user whose request the middleware let
 // through.
 func Email(ctx context.Context) (string, bool) {
@@ -88,8 +94,7 @@ func Middleware(verifier IDTokenVerifier, allowedEmails []string) func(http.Hand
 				return
 			}
 
-			ctx := context.WithValue(req.Context(), emailKey{}, tokenClaims.Email)
-			next.ServeHTTP(resp, req.WithContext(ctx))
+			next.ServeHTTP(resp, req.WithContext(WithEmail(req.Context(), tokenClaims.Email)))
 		})
 	}
 }
