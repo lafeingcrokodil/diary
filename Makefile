@@ -1,4 +1,4 @@
-.PHONY: run build web test vet lint
+.PHONY: run build image web test vet lint
 
 # The Go binary embeds web/build, so the Go targets need that
 # directory to exist. If the front end hasn't been built, a placeholder page is
@@ -12,6 +12,10 @@ run: web
 # Builds the front end and a server binary that includes it.
 build: web
 	go build -o bin/diary ./cmd/diary
+
+# Builds the container image.
+image:
+	docker build --tag diary .
 
 web:
 	cd web && pnpm install --frozen-lockfile && pnpm build

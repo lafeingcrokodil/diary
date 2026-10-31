@@ -6,9 +6,9 @@ written in TypeScript and built as a single-page app with
 
 ## Development
 
-Requires the Node.js version in `.nvmrc` (or later) and pnpm (the version is
-pinned in `package.json`; with [Corepack](https://pnpm.io/installation#using-corepack)
-enabled, it's picked up automatically).
+Requires the Node.js version in `.nvmrc` (or later) and the pnpm version in
+the `packageManager` field of `package.json`, e.g. installed with
+`npm install --global pnpm@<version>`.
 
 ```bash
 pnpm install   # install dependencies

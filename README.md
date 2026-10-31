@@ -22,6 +22,7 @@ Requires:
 ```bash
 make run    # build the front end and start the server on http://localhost:8080
 make build  # build the front end and a server binary (bin/diary)
+make image  # build the container image (diary), which needs only Docker
 make web    # build only the front end
 make test   # run the tests
 make vet    # run go vet
