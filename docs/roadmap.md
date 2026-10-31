@@ -40,7 +40,7 @@ can each be reviewed comfortably on their own.
 
 - [x] Terraform state bucket and API enablement
 - [x] Artifact Registry and Cloud Run
-- [ ] Continuous deployment from `main` via Workload Identity Federation
+- [x] Continuous deployment from `main` via Workload Identity Federation
 - [x] Budget alert
 
 ### M2 – Authentication

@@ -68,10 +68,33 @@ terraform apply
 After applying, `terraform output service_url` prints the app's URL. Until the
 app is deployed, the service runs Google's placeholder "hello" image.
 
+CI checks the formatting and validity of the configuration on every pull
+request, but doesn't apply it.
+
+## Deployment
+
+Every push to `main` deploys the app once CI passes: the `deploy` job in
+`.github/workflows/ci.yml` builds the image, pushes it to Artifact Registry
+and updates the Cloud Run service. It authenticates through workload identity
+federation, which only accepts workflow runs for `main` in this repository, so
+no keys are stored in GitHub.
+
+The job needs two repository variables (not secrets, since neither value is
+sensitive). After the first `terraform apply`, set them from the Terraform
+outputs, either in the repository's settings (Settings → Secrets and variables
+→ Actions → Variables) or with the [GitHub CLI](https://cli.github.com/):
+
+```bash
+gh variable set GCP_WORKLOAD_IDENTITY_PROVIDER --body "$(terraform output -raw workload_identity_provider)"
+```
+
+```bash
+gh variable set GCP_DEPLOYER_SERVICE_ACCOUNT --body "$(terraform output -raw deployer_service_account)"
+```
+
+## Budget
+
 When the project's spending reaches 50%, 90% and 100% of the monthly budget
 (€5 or $5 by default, in the billing account's currency), or is forecast to
 exceed it, the billing account's administrators and users get an email. To
 change the amount, set `monthly_budget` in `terraform.tfvars`.
-
-CI checks the formatting and validity of the configuration on every pull
-request, but doesn't apply it.
