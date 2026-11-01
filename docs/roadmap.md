@@ -78,8 +78,27 @@ sugar and carbohydrates) aren't counted twice.
 
 ### M5 – Recipes
 
-- [ ] Recipes with ingredients
-- [ ] Computed nutrition (decide how recipe yield is defined)
+A recipe has a name, an optional source URL, ingredients, steps and optional
+notes. Each ingredient is one of the user's own foods (no sub-recipes or
+free-text ingredients for now), with an optional note, and an amount either in
+the food's unit or as a number of one of its servings. A recipe's yield is the
+whole recipe: the diary will log a fraction of it (e.g. 0.5 for half a pot of
+soup).
+
+A recipe's nutrition is computed from its foods' current values, so correcting
+a food corrects every recipe that uses it. A nutrient whose amount is unknown
+for some ingredient is shown as incomplete, not counted as zero. So that
+recipes' amounts keep their meaning, a food that a recipe uses can't be
+deleted, have its unit changed, or have a serving that the recipe uses renamed
+or removed.
+
+- [x] Domain types and storage interface (in-memory implementation)
+- [ ] Firestore implementation, tested against the emulator
+- [ ] CRUD API, with archiving and permanent deletion
+- [ ] Computed nutrition (domain function and API)
+- [ ] Protecting foods that recipes use (deletion, unit changes, servings)
+- [ ] Recipe list and editor UI
+- [ ] Nutrition in the recipe UI
 
 ### M6 – Diary
 
@@ -113,7 +132,6 @@ sugar and carbohydrates) aren't counted twice.
 To be discussed when we reach the relevant milestone:
 
 - Should diary entries be able to reference a single food as well as a recipe?
-- How is a recipe's yield defined (servings, total cooked weight)?
 - Should past diary entries change when a recipe or food is edited, or keep a
   snapshot? (This also decides what permanently deleting a food does to
   diary entries that use it.)
