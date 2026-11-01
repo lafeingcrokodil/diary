@@ -22,12 +22,12 @@
 
 <main>
 	{#await food}
-		<p>Loading…</p>
+		<p class="muted">Loading…</p>
 	{:then loaded}
 		<h1>{loaded.name}</h1>
 		<FoodEditor initial={toForm(loaded)} ondelete={remove} onsave={save} />
 	{:catch error}
 		<p role="alert">Loading the food failed: {String(error)}</p>
 	{/await}
-	<a href={resolve('/foods')}>Back to foods</a>
+	<p><a href={resolve('/foods')}>Back to foods</a></p>
 </main>

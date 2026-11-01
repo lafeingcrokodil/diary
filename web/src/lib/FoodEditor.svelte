@@ -83,7 +83,7 @@
 	<fieldset>
 		<legend>Servings</legend>
 		{#each form.servings as serving, index (index)}
-			<div>
+			<div class="serving">
 				<label>
 					Name
 					<input autocomplete="off" placeholder="e.g. slice" bind:value={serving.name} />
@@ -93,6 +93,7 @@
 					<input inputmode="decimal" bind:value={serving.amount} />
 				</label>
 				<button
+					class="secondary"
 					onclick={(): void => {
 						removeServing(index);
 					}}
@@ -100,15 +101,53 @@
 				>
 			</div>
 		{/each}
-		<button onclick={addServing} type="button">Add a serving</button>
+		<button class="secondary" onclick={addServing} type="button">Add a serving</button>
 	</fieldset>
 
 	{#if error !== undefined}
 		<p role="alert">{error}</p>
 	{/if}
 
-	<button disabled={busy} type="submit">Save</button>
-	{#if ondelete !== undefined}
-		<button disabled={busy} onclick={remove} type="button">Delete</button>
-	{/if}
+	<div class="actions">
+		<button disabled={busy} type="submit">Save</button>
+		{#if ondelete !== undefined}
+			<button class="danger" disabled={busy} onclick={remove} type="button">Delete</button>
+		{/if}
+	</div>
 </form>
+
+<style>
+	form {
+		display: grid;
+		gap: var(--space);
+	}
+
+	/* A serving's name and amount side by side, with Remove below them on
+	   narrow screens and next to them on wider ones. */
+	.serving {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 0.5rem;
+		align-items: end;
+	}
+
+	.serving button {
+		grid-column: 1 / -1;
+	}
+
+	@media (min-width: 30rem) {
+		.serving {
+			grid-template-columns: 2fr 1fr auto;
+		}
+
+		.serving button {
+			grid-column: auto;
+		}
+	}
+
+	.actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: space-between;
+	}
+</style>

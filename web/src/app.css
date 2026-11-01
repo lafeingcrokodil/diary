@@ -1,0 +1,151 @@
+/* App-wide styles. The layout is mobile-first: one column that's comfortable
+   on a phone, capped at a readable width on larger screens. */
+
+:root {
+	color-scheme: light dark;
+
+	--background: #f6f5f2;
+	--surface: #ffffff;
+	--text: #1f2328;
+	--muted: #5f6670;
+	--border: #d8d6d0;
+	--accent: #2f6f4f;
+	--accent-text: #ffffff;
+	--danger: #b42318;
+	--danger-background: #fdecea;
+
+	--radius: 0.5rem;
+	--space: 1rem;
+	--tap: 2.75rem;
+
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		sans-serif;
+	font-size: 16px;
+	line-height: 1.5;
+	color: var(--text);
+	background: var(--background);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background: #15181c;
+		--surface: #1f2328;
+		--text: #e8e6e3;
+		--muted: #a0a6ad;
+		--border: #3a3f45;
+		--accent: #6fbf8f;
+		--accent-text: #0c1a12;
+		--danger: #ff8a80;
+		--danger-background: #3b1f1d;
+	}
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+}
+
+main,
+.status {
+	max-width: 40rem;
+	margin: 0 auto;
+	padding: var(--space);
+}
+
+h1 {
+	margin: 0.5rem 0 1rem;
+	font-size: 1.5rem;
+	line-height: 1.25;
+}
+
+a {
+	color: var(--accent);
+}
+
+/* Buttons, and links that look like them. */
+button,
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--tap);
+	padding: 0 1rem;
+	font: inherit;
+	font-weight: 600;
+	color: var(--accent-text);
+	text-decoration: none;
+	cursor: pointer;
+	background: var(--accent);
+	border: 1px solid var(--accent);
+	border-radius: var(--radius);
+}
+
+button.secondary {
+	color: var(--text);
+	background: transparent;
+	border-color: var(--border);
+}
+
+button.danger {
+	color: var(--danger);
+	background: transparent;
+	border-color: var(--danger);
+}
+
+button:disabled {
+	cursor: default;
+	opacity: 0.6;
+}
+
+/* Form fields: each label sits above its field, which fills the width. */
+label {
+	display: grid;
+	gap: 0.25rem;
+	font-weight: 500;
+}
+
+input,
+select {
+	width: 100%;
+	min-height: var(--tap);
+	padding: 0 0.75rem;
+	font: inherit;
+	color: var(--text);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+}
+
+fieldset {
+	display: grid;
+	gap: 0.75rem;
+	padding: var(--space);
+	margin: 0;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+}
+
+legend {
+	padding: 0 0.25rem;
+	font-weight: 600;
+}
+
+[role='alert'] {
+	padding: 0.75rem var(--space);
+	color: var(--danger);
+	background: var(--danger-background);
+	border-radius: var(--radius);
+}
+
+.muted {
+	color: var(--muted);
+}

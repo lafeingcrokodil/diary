@@ -14,4 +14,5 @@
 <main>
 	<h1>New food</h1>
 	<FoodEditor initial={emptyForm()} onsave={save} />
+	<p><a href={resolve('/foods')}>Back to foods</a></p>
 </main>
