@@ -12,6 +12,7 @@ import (
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
 	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
+	"github.com/lafeingcrokodil/diary/internal/nutrient/nutrienttest"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
@@ -105,7 +106,7 @@ func runTests(t *testing.T, tests []testCase) {
 		"index.html":     {Data: []byte(indexHTML)},
 		"_app/app.js":    {Data: []byte("console.log('hi');")},
 		"_app/immutable": {Mode: fs.ModeDir},
-	}, fakeAuth, foodtest.NewMemoryStore())
+	}, fakeAuth, server.Stores{Foods: foodtest.NewMemoryStore(), Nutrients: nutrienttest.NewMemoryStore()})
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

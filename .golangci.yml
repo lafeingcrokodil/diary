@@ -45,6 +45,12 @@ linters:
         linters:
           - funlen
           - goconst
+      # Tests of similar APIs (e.g. foods and nutrients) check the same things
+      # in the same way. Each test reads better spelled out than as a call to a
+      # shared helper that's generic over the APIs.
+      - path: _test\.go
+        linters:
+          - dupl
       - path: ^internal/(food/foodtest|nutrient/nutrienttest)/
         linters:
           - funlen

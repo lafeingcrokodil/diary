@@ -57,11 +57,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	foods := firestoredb.NewFoodStore(firestoreClient)
+	stores := server.Stores{
+		Foods:     firestoredb.NewFoodStore(firestoreClient),
+		Nutrients: firestoredb.NewNutrientStore(firestoreClient),
+	}
 
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           server.New(frontend, auth.Middleware(verifier, allowedEmails), foods),
+		Handler:           server.New(frontend, auth.Middleware(verifier, allowedEmails), stores),
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
