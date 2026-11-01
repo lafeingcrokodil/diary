@@ -250,13 +250,7 @@ func (failingNutrientStore) Update(context.Context, string, nutrient.Nutrient) (
 	return nutrient.Nutrient{}, errStore
 }
 
-// failingDeleteStore is a nutrient store whose Delete fails, so that the
-// nutrient can be found and checked first.
-type failingDeleteStore struct {
-	*nutrienttest.MemoryStore
-}
-
-func (failingDeleteStore) Delete(context.Context, string, string) error {
+func (failingNutrientStore) Delete(context.Context, string, string) error {
 	return errStore
 }
 
@@ -278,11 +272,4 @@ func TestNutrientsStoreError(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, rec.Code, request.method+" "+request.path)
 		assert.NotContains(t, rec.Body.String(), errStore.Error())
 	}
-
-	failingDelete := newNutrientsAPI(failingDeleteStore{nutrienttest.NewMemoryStore()})
-	created := failingDelete.createProtein(t)
-	failingDelete.archive(t, created)
-
-	rec := failingDelete.do(t, http.MethodDelete, "/api/nutrients/"+created.ID, alice, "")
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 }

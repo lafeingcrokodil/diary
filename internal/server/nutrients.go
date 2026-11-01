@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/lafeingcrokodil/diary/internal/nutrient"
@@ -38,7 +39,7 @@ func fromNutrientJSON(item nutrientJSON) nutrient.Nutrient {
 
 // handleNutrients adds the routes for the signed-in user's nutrients to mux.
 // Nutrients are archived and unarchived by updating them, and only archived
-// nutrients can be deleted, so that deleting one is always a second step.
+// nutrients can be deleted (see nutrient.Store.Delete).
 func handleNutrients(mux *http.ServeMux, nutrients nutrient.Store) {
 	handlers := nutrientHandlers{nutrients: nutrients}
 	mux.HandleFunc("GET /api/nutrients", handlers.list)
@@ -112,20 +113,13 @@ func (h nutrientHandlers) update(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (h nutrientHandlers) delete(resp http.ResponseWriter, req *http.Request) {
-	id := req.PathValue("id")
-
-	existing, err := h.nutrients.Get(req.Context(), owner(req), id)
-	if err != nil {
-		storeError(resp, req, err)
-		return
-	}
-
-	if !existing.Archived {
+	err := h.nutrients.Delete(req.Context(), owner(req), req.PathValue("id"))
+	if errors.Is(err, nutrient.ErrNotArchived) {
 		http.Error(resp, "Only archived nutrients can be deleted.", http.StatusConflict)
 		return
 	}
 
-	if err := h.nutrients.Delete(req.Context(), owner(req), id); err != nil {
+	if err != nil {
 		storeError(resp, req, err)
 		return
 	}

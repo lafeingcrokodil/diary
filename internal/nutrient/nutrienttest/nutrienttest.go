@@ -25,6 +25,13 @@ func Protein() nutrient.Nutrient {
 	}
 }
 
+func archivedProtein() nutrient.Nutrient {
+	n := Protein()
+	n.Archived = true
+
+	return n
+}
+
 // CheckStore checks that a Store implementation behaves as the interface
 // describes. newStore must return an empty store each time it's called. It
 // gets the test that the store is for, so that it can fail that test if it
@@ -167,7 +174,7 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) nutrient.Store) {
 
 		store := newStore(t)
 
-		created, err := store.Create(t.Context(), alice, Protein())
+		created, err := store.Create(t.Context(), alice, archivedProtein())
 		require.NoError(t, err)
 
 		require.NoError(t, store.Delete(t.Context(), alice, created.ID))
@@ -178,12 +185,28 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) nutrient.Store) {
 		require.ErrorIs(t, store.Delete(t.Context(), alice, created.ID), nutrient.ErrNotFound)
 	})
 
+	t.Run("delete a nutrient that isn't archived", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore(t)
+
+		created, err := store.Create(t.Context(), alice, Protein())
+		require.NoError(t, err)
+
+		require.ErrorIs(t, store.Delete(t.Context(), alice, created.ID), nutrient.ErrNotArchived)
+
+		got, err := store.Get(t.Context(), alice, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created, got)
+	})
+
 	t.Run("users can't reach each other's nutrients", func(t *testing.T) {
 		t.Parallel()
 
 		store := newStore(t)
 
-		alicesNutrient, err := store.Create(t.Context(), alice, Protein())
+		// Archived, so that only the owner check stops Bob from deleting it.
+		alicesNutrient, err := store.Create(t.Context(), alice, archivedProtein())
 		require.NoError(t, err)
 
 		_, err = store.Get(t.Context(), bob, alicesNutrient.ID)
