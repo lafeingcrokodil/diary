@@ -72,7 +72,7 @@ sugar and carbohydrates) aren't counted twice.
 - [x] Domain types and storage interface (in-memory and Firestore)
 - [x] CRUD API, with archiving and permanent deletion
 - [x] Nutrients page, with an archive view
-- [ ] Nutrient content on foods (API and food editor), with deleting a
+- [x] Nutrient content on foods (API and food editor), with deleting a
       nutrient also removing its values from foods
 - [ ] Archiving and permanent deletion for foods
 

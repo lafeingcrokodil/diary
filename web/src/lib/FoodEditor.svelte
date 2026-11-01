@@ -1,17 +1,24 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { type FoodForm, parseForm } from '#lib/food-form.ts';
 	import type { FoodInput } from '#lib/foods.ts';
+	import type { Nutrient } from '#lib/nutrients.ts';
 
 	interface Props {
 		// The values to start with.
 		initial: FoodForm;
+		// All of the user's nutrients. Only active ones get a field, but the
+		// amounts of archived ones are kept.
+		nutrients: Nutrient[];
 		// Saves the food. If it throws, the error is shown and the form stays.
 		onsave: (input: FoodInput) => Promise<void>;
 		// Deletes the food, for foods that already exist.
 		ondelete?: () => Promise<void>;
 	}
 
-	const { initial, onsave, ondelete }: Props = $props();
+	const { initial, nutrients, onsave, ondelete }: Props = $props();
+
+	const active = $derived(nutrients.filter((nutrient) => !nutrient.archived));
 
 	// The form starts with the initial values, and then belongs to the user.
 	// svelte-ignore state_referenced_locally
@@ -35,7 +42,7 @@
 
 	const save = async (event: SubmitEvent): Promise<void> => {
 		event.preventDefault();
-		const parsed = parseForm(form);
+		const parsed = parseForm(form, nutrients);
 		if (!parsed.ok) {
 			({ error } = parsed);
 			return;
@@ -102,6 +109,20 @@
 			</div>
 		{/each}
 		<button class="secondary" onclick={addServing} type="button">Add a serving</button>
+	</fieldset>
+
+	<fieldset>
+		<legend>Nutrients per 100 {form.unit}</legend>
+		{#each active as nutrient (nutrient.id)}
+			<label>
+				{nutrient.name} ({nutrient.unit})
+				<input inputmode="decimal" placeholder="unknown" bind:value={form.nutrients[nutrient.id]} />
+			</label>
+		{:else}
+			<p class="muted">
+				No nutrients yet. <a href={resolve('/nutrients/new')}>Add a nutrient</a> to track it.
+			</p>
+		{/each}
 	</fieldset>
 
 	{#if error !== undefined}

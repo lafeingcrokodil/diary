@@ -16,6 +16,9 @@ export interface FoodInput {
 	unit: Unit;
 	kcalPer100: number;
 	servings: Serving[];
+	// The amounts of the user's nutrients per 100 of the food's unit, by
+	// nutrient ID. A nutrient without an amount has an unknown amount.
+	nutrients: Record<string, number>;
 }
 
 // A stored food.
@@ -30,6 +33,12 @@ const isServing = (value: unknown): value is Serving =>
 	typeof value.name === 'string' &&
 	'amount' in value &&
 	typeof value.amount === 'number';
+
+const isAmounts = (value: unknown): value is Record<string, number> =>
+	typeof value === 'object' &&
+	value !== null &&
+	!Array.isArray(value) &&
+	Object.values(value).every((amount) => typeof amount === 'number');
 
 const isFood = (value: unknown): value is Food =>
 	typeof value === 'object' &&
@@ -46,7 +55,9 @@ const isFood = (value: unknown): value is Food =>
 	typeof value.kcalPer100 === 'number' &&
 	'servings' in value &&
 	Array.isArray(value.servings) &&
-	value.servings.every(isServing);
+	value.servings.every(isServing) &&
+	'nutrients' in value &&
+	isAmounts(value.nutrients);
 
 const readFood = async (response: Response): Promise<Food> => {
 	const value: unknown = await response.json();
