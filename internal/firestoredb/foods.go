@@ -22,6 +22,7 @@ type foodDoc struct {
 	Servings   []servingDoc `firestore:"servings"`
 	// Nutrients is keyed by nutrient ID.
 	Nutrients map[string]float64 `firestore:"nutrients"`
+	Archived  bool               `firestore:"archived"`
 }
 
 func (d foodDoc) owner() string { return d.Owner }
@@ -45,6 +46,7 @@ func toDoc(owner string, item food.Food) foodDoc {
 		KcalPer100: item.KcalPer100,
 		Servings:   servings,
 		Nutrients:  item.Nutrients,
+		Archived:   item.Archived,
 	}
 }
 
@@ -63,6 +65,7 @@ func fromDoc(id string, doc foodDoc) food.Food {
 		KcalPer100: doc.KcalPer100,
 		Servings:   servings,
 		Nutrients:  doc.Nutrients,
+		Archived:   doc.Archived,
 	}
 }
 
@@ -165,10 +168,18 @@ func (s *FoodStore) Delete(ctx context.Context, owner, id string) error {
 		return food.ErrNotFound
 	}
 
+	// Checking that the food is archived and deleting it happen in one
+	// transaction, so that it can't be unarchived in between.
 	err := s.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
 		snapshot, err := tx.Get(ref)
-		if err := readOwned(owner, snapshot, err, food.ErrNotFound, &foodDoc{}); err != nil {
+
+		var doc foodDoc
+		if err := readOwned(owner, snapshot, err, food.ErrNotFound, &doc); err != nil {
 			return err
+		}
+
+		if !doc.Archived {
+			return food.ErrNotArchived
 		}
 
 		return tx.Delete(ref)

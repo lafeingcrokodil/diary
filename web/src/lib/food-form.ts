@@ -14,7 +14,10 @@ export interface FoodForm {
 }
 
 // The outcome of reading a form: either a food to save, or what's wrong.
-export type ParsedForm = { ok: true; input: FoodInput } | { ok: false; error: string };
+// The fields of a food that its form edits.
+export type FoodFields = Omit<FoodInput, 'archived'>;
+
+export type ParsedForm = { ok: true; input: FoodFields } | { ok: false; error: string };
 
 // Returns the form for a new food.
 export const emptyForm = (): FoodForm => ({
@@ -27,7 +30,7 @@ export const emptyForm = (): FoodForm => ({
 });
 
 // Returns a form with a food's current values.
-export const toForm = (input: FoodInput): FoodForm => ({
+export const toForm = (input: FoodFields): FoodForm => ({
 	name: input.name,
 	brand: input.brand,
 	unit: input.unit,

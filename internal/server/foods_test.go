@@ -23,7 +23,7 @@ const (
 	alice = "alice"
 	bob   = "bob"
 	bread = `{"name":"Rye bread","brand":"Bakery","unit":"g","kcalPer100":210,` +
-		`"servings":[{"name":"slice","amount":40}],"nutrients":{}}`
+		`"servings":[{"name":"slice","amount":40}],"nutrients":{},"archived":false}`
 )
 
 type foodJSON struct {
@@ -37,6 +37,7 @@ type foodJSON struct {
 		Amount float64 `json:"amount"`
 	} `json:"servings"`
 	Nutrients map[string]float64 `json:"nutrients"`
+	Archived  bool               `json:"archived"`
 }
 
 // api sends requests to a server whose data is kept in stores.
@@ -77,6 +78,15 @@ func (a api) createBread(t *testing.T) foodJSON {
 	require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
 
 	return decodeFood(t, rec)
+}
+
+// archiveFood archives one of alice's foods.
+func (a api) archiveFood(t *testing.T, item foodJSON) {
+	t.Helper()
+
+	body := strings.Replace(bread, `"archived":false`, `"archived":true`, 1)
+	rec := a.do(t, http.MethodPut, "/api/foods/"+item.ID, alice, body)
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 }
 
 // decode checks that a response is JSON, and decodes it into value.
@@ -153,17 +163,50 @@ func TestFoods(t *testing.T) {
 		assert.Equal(t, updated, decodeFood(t, rec))
 	})
 
-	t.Run("delete", func(t *testing.T) {
+	t.Run("archive and unarchive", func(t *testing.T) {
 		t.Parallel()
 
 		foods := newFoodsAPI(foodtest.NewMemoryStore())
 		created := foods.createBread(t)
+		foods.archiveFood(t, created)
+
+		rec := foods.do(t, http.MethodGet, "/api/foods", alice, "")
+
+		var list []foodJSON
+		decode(t, rec, &list)
+		require.Len(t, list, 1)
+		assert.True(t, list[0].Archived)
+
+		rec = foods.do(t, http.MethodPut, "/api/foods/"+created.ID, alice, bread)
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.False(t, decodeFood(t, rec).Archived)
+	})
+
+	t.Run("delete an archived food", func(t *testing.T) {
+		t.Parallel()
+
+		foods := newFoodsAPI(foodtest.NewMemoryStore())
+		created := foods.createBread(t)
+		foods.archiveFood(t, created)
 
 		rec := foods.do(t, http.MethodDelete, "/api/foods/"+created.ID, alice, "")
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
 		rec = foods.do(t, http.MethodGet, "/api/foods/"+created.ID, alice, "")
 		assert.Equal(t, http.StatusNotFound, rec.Code)
+	})
+
+	t.Run("foods that aren't archived can't be deleted", func(t *testing.T) {
+		t.Parallel()
+
+		foods := newFoodsAPI(foodtest.NewMemoryStore())
+		created := foods.createBread(t)
+
+		rec := foods.do(t, http.MethodDelete, "/api/foods/"+created.ID, alice, "")
+		assert.Equal(t, http.StatusConflict, rec.Code)
+
+		rec = foods.do(t, http.MethodGet, "/api/foods/"+created.ID, alice, "")
+		assert.Equal(t, http.StatusOK, rec.Code)
 	})
 
 	t.Run("missing food", func(t *testing.T) {

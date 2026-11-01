@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type FoodForm, emptyForm, parseForm, toForm } from '#lib/food-form.ts';
-import type { FoodInput } from '#lib/foods.ts';
+import { type FoodFields, type FoodForm, emptyForm, parseForm, toForm } from '#lib/food-form.ts';
 import type { Nutrient } from '#lib/nutrients.ts';
 
 // The user's nutrients: protein is active, and fibre is archived.
@@ -9,7 +8,7 @@ const nutrients: Nutrient[] = [
 	{ id: 'fibre', name: 'Fibre', unit: 'g', kcalPerGram: 2, archived: true }
 ];
 
-const bread: FoodInput = {
+const bread: FoodFields = {
 	name: 'Rye bread',
 	brand: 'Bakery',
 	unit: 'g',
@@ -26,7 +25,7 @@ describe('parseForm', () => {
 	});
 
 	it('round-trips a food through toForm', () => {
-		const milk: FoodInput = {
+		const milk: FoodFields = {
 			name: 'Milk',
 			brand: '',
 			unit: 'ml',

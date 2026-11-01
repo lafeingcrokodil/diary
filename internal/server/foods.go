@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"maps"
 	"net/http"
 	"slices"
@@ -21,6 +22,7 @@ type foodJSON struct {
 	Servings   []servingJSON `json:"servings"`
 	// Nutrients maps nutrient IDs to amounts per 100 of the food's unit.
 	Nutrients map[string]float64 `json:"nutrients"`
+	Archived  bool               `json:"archived"`
 }
 
 type servingJSON struct {
@@ -49,6 +51,7 @@ func toFoodJSON(item food.Food) foodJSON {
 		KcalPer100: item.KcalPer100,
 		Servings:   servings,
 		Nutrients:  nutrients,
+		Archived:   item.Archived,
 	}
 }
 
@@ -66,12 +69,14 @@ func fromFoodJSON(item foodJSON) food.Food {
 		KcalPer100: item.KcalPer100,
 		Servings:   servings,
 		Nutrients:  item.Nutrients,
+		Archived:   item.Archived,
 	}
 }
 
 // handleFoods adds the routes for the signed-in user's foods to mux. A food's
 // nutrient amounts must be for the user's own nutrients, which are kept in
-// nutrients.
+// nutrients. Foods are archived and unarchived by updating them, and only
+// archived foods can be deleted (see food.Store.Delete).
 func handleFoods(mux *http.ServeMux, foods food.Store, nutrients nutrient.Store) {
 	handlers := foodHandlers{foods: foods, nutrients: nutrients}
 	mux.HandleFunc("GET /api/foods", handlers.list)
@@ -146,7 +151,13 @@ func (h foodHandlers) update(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (h foodHandlers) delete(resp http.ResponseWriter, req *http.Request) {
-	if err := h.foods.Delete(req.Context(), owner(req), req.PathValue("id")); err != nil {
+	err := h.foods.Delete(req.Context(), owner(req), req.PathValue("id"))
+	if errors.Is(err, food.ErrNotArchived) {
+		http.Error(resp, "Only archived foods can be deleted.", http.StatusConflict)
+		return
+	}
+
+	if err != nil {
 		storeError(resp, req, err)
 		return
 	}

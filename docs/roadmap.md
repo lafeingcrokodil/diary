@@ -74,7 +74,7 @@ sugar and carbohydrates) aren't counted twice.
 - [x] Nutrients page, with an archive view
 - [x] Nutrient content on foods (API and food editor), with deleting a
       nutrient also removing its values from foods
-- [ ] Archiving and permanent deletion for foods
+- [x] Archiving and permanent deletion for foods
 
 ### M5 – Recipes
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import FoodList from '#lib/FoodList.svelte';
 	import { type Food, listFoods } from '#lib/foods.ts';
 
 	const foods: Promise<Food[]> = listFoods();
@@ -13,23 +14,19 @@
 
 	{#await foods}
 		<p class="muted">Loading…</p>
-	{:then list}
-		{#if list.length === 0}
+	{:then all}
+		{@const active = all.filter((food) => !food.archived)}
+		{@const archived = all.filter((food) => food.archived)}
+		{#if active.length === 0}
 			<p class="muted">No foods yet.</p>
 		{:else}
-			<ul>
-				{#each list as food (food.id)}
-					<li>
-						<a href={resolve('/foods/[id]', { id: food.id })}>
-							<span class="name">{food.name}</span>
-							<span class="muted">
-								{#if food.brand !== ''}{food.brand} ·{/if}
-								{food.kcalPer100} kcal per 100 {food.unit}
-							</span>
-						</a>
-					</li>
-				{/each}
-			</ul>
+			<FoodList foods={active} />
+		{/if}
+		{#if archived.length > 0}
+			<details>
+				<summary>Archived ({archived.length})</summary>
+				<FoodList foods={archived} />
+			</details>
 		{/if}
 	{:catch error}
 		<p role="alert">Loading the foods failed: {String(error)}</p>
@@ -44,32 +41,13 @@
 		justify-content: space-between;
 	}
 
-	ul {
-		padding: 0;
-		margin: 0;
-		list-style: none;
-		background: var(--surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
+	details {
+		margin-top: var(--space);
 	}
 
-	li + li {
-		border-top: 1px solid var(--border);
-	}
-
-	/* The whole row is the link, so it's easy to tap. */
-	li a {
-		display: grid;
-		padding: 0.75rem var(--space);
-		color: inherit;
-		text-decoration: none;
-	}
-
-	.name {
-		font-weight: 600;
-	}
-
-	.muted {
-		font-size: 0.875rem;
+	summary {
+		padding: 0.5rem 0;
+		color: var(--muted);
+		cursor: pointer;
 	}
 </style>
