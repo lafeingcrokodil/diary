@@ -11,12 +11,14 @@ import (
 	"github.com/lafeingcrokodil/diary/internal/auth"
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/nutrient"
+	"github.com/lafeingcrokodil/diary/internal/recipe"
 )
 
 // Stores holds the stores that keep the app's data.
 type Stores struct {
 	Foods     food.Store
 	Nutrients nutrient.Store
+	Recipes   recipe.Store
 }
 
 // New returns an http.Handler that serves all of the app's routes, plus the
@@ -32,6 +34,7 @@ func New(frontend fs.FS, authenticate func(http.Handler) http.Handler, stores St
 	api.HandleFunc("GET /api/me", handleMe)
 	handleFoods(api, stores.Foods, stores.Nutrients)
 	handleNutrients(api, stores.Nutrients)
+	handleRecipes(api, stores.Recipes, stores.Foods)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", handleHealth)

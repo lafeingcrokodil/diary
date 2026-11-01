@@ -9,6 +9,7 @@ import (
 	"github.com/lafeingcrokodil/diary/internal/auth"
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/nutrient"
+	"github.com/lafeingcrokodil/diary/internal/recipe"
 )
 
 // maxBodyBytes limits the size of request bodies, which are small JSON
@@ -41,7 +42,7 @@ func decodeBody(resp http.ResponseWriter, req *http.Request, value any, what str
 // storeError responds to an error from a store: a 404 if the item doesn't
 // exist (or belongs to someone else), and a 500 otherwise.
 func storeError(resp http.ResponseWriter, req *http.Request, err error) {
-	if errors.Is(err, food.ErrNotFound) || errors.Is(err, nutrient.ErrNotFound) {
+	if errors.Is(err, food.ErrNotFound) || errors.Is(err, nutrient.ErrNotFound) || errors.Is(err, recipe.ErrNotFound) {
 		http.NotFound(resp, req)
 		return
 	}

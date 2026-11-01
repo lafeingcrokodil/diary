@@ -94,7 +94,7 @@ or removed.
 
 - [x] Domain types and storage interface (in-memory implementation)
 - [x] Firestore implementation, tested against the emulator
-- [ ] CRUD API, with archiving and permanent deletion
+- [x] CRUD API, with archiving and permanent deletion
 - [ ] Computed nutrition (domain function and API)
 - [ ] Protecting foods that recipes use (deletion, unit changes, servings)
 - [ ] Recipe list and editor UI
@@ -126,6 +126,8 @@ or removed.
 - Data export and backups
 - Default nutrients for new users (fat, carbohydrates, fibre and protein, with
   their kcal per gram)
+- Custom order for nutrients (e.g. the order of EU food labels), instead of
+  sorting them by name
 
 ## Open questions
 
