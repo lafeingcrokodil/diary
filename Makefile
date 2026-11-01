@@ -40,16 +40,26 @@ TEST_HELPERS := internal/food/foodtest
 test: $(FRONTEND)
 	go test -race -coverprofile=coverage.out ./...
 
+# The module's path, which starts every package path in the coverage profile.
+MODULE := $(shell go list -m)
+
 # Runs the tests and fails if any package in internal/ has less than
 # MIN_COVERAGE coverage. Each line of the profile after the first is
-# "file:range statements count", and a package is its file's directory.
+# "file:range statements count", where file is a path that starts with the
+# module's path, and a file's package is its directory.
 cover: test
-	@awk -v min=$(MIN_COVERAGE) -v helpers="$(TEST_HELPERS)" ' \
-		BEGIN { for (i = split(helpers, list, " "); i > 0; i--) helper["/" list[i]] = 1 } \
-		NR > 1 && $$1 ~ /\/internal\// { \
-			pkg = $$1; sub(/\/[^\/]*$$/, "", pkg); \
-			for (h in helper) if (substr(pkg, length(pkg) - length(h) + 1) == h) next; \
-			total[pkg] += $$2; if ($$3 > 0) covered[pkg] += $$2 \
+	@awk -v min=$(MIN_COVERAGE) -v module=$(MODULE) -v helpers="$(TEST_HELPERS)" ' \
+		BEGIN { \
+			n = split(helpers, list, " "); \
+			for (i = 1; i <= n; i++) helper[list[i]] = 1 \
+		} \
+		NR > 1 { \
+			pkg = $$1; \
+			sub(/\/[^\/]*$$/, "", pkg); \
+			pkg = substr(pkg, length(module) + 2); \
+			if (pkg !~ /^internal\// || pkg in helper) next; \
+			total[pkg] += $$2; \
+			if ($$3 > 0) covered[pkg] += $$2 \
 		} \
 		END { \
 			for (pkg in total) { \
