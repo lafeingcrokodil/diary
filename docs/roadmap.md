@@ -95,7 +95,7 @@ or removed.
 - [x] Domain types and storage interface (in-memory implementation)
 - [x] Firestore implementation, tested against the emulator
 - [x] CRUD API, with archiving and permanent deletion
-- [ ] Computed nutrition (domain function and API)
+- [x] Computed nutrition (domain function and API)
 - [ ] Protecting foods that recipes use (deletion, unit changes, servings)
 - [ ] Recipe list and editor UI
 - [ ] Nutrition in the recipe UI

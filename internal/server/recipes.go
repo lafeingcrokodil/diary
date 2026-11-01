@@ -31,6 +31,58 @@ type ingredientJSON struct {
 	Note    string  `json:"note"`
 }
 
+// recipeResponseJSON is how the API responds with a recipe: as the user entered
+// it, with its nutrition worked out from its foods' current values. Requests
+// can't include the nutrition.
+type recipeResponseJSON struct {
+	recipeJSON
+
+	Nutrition nutritionJSON `json:"nutrition"`
+}
+
+// nutritionJSON is the nutritional information of a whole recipe.
+type nutritionJSON struct {
+	Kcal totalJSON `json:"kcal"`
+	// Nutrients maps nutrient IDs to their totals, for the nutrients whose
+	// amount is known for at least one ingredient.
+	Nutrients map[string]totalJSON `json:"nutrients"`
+}
+
+// totalJSON is a total over a recipe's ingredients. Missing holds the
+// positions (from 0) of the ingredients whose amount isn't known, so that the
+// amount is only a lower bound if there are any.
+type totalJSON struct {
+	Amount  float64 `json:"amount"`
+	Missing []int   `json:"missing"`
+}
+
+func toTotalJSON(total recipe.Total) totalJSON {
+	// An empty array rather than null, so that clients don't need to handle
+	// both.
+	missing := total.Missing
+	if missing == nil {
+		missing = []int{}
+	}
+
+	return totalJSON{Amount: total.Amount, Missing: missing}
+}
+
+// toRecipeResponse returns how the API responds with item, whose ingredients'
+// foods are in foods, by ID.
+func toRecipeResponse(item recipe.Recipe, foods map[string]food.Food) recipeResponseJSON {
+	nutrition := item.Nutrition(foods)
+
+	nutrients := make(map[string]totalJSON, len(nutrition.Nutrients))
+	for id, total := range nutrition.Nutrients {
+		nutrients[id] = toTotalJSON(total)
+	}
+
+	return recipeResponseJSON{
+		recipeJSON: toRecipeJSON(item),
+		Nutrition:  nutritionJSON{Kcal: toTotalJSON(nutrition.Kcal), Nutrients: nutrients},
+	}
+}
+
 func toRecipeJSON(item recipe.Recipe) recipeJSON {
 	ingredients := make([]ingredientJSON, 0, len(item.Ingredients))
 	for _, ingredient := range item.Ingredients {
@@ -74,8 +126,9 @@ func fromRecipeJSON(item recipeJSON) recipe.Recipe {
 
 // handleRecipes adds the routes for the signed-in user's recipes to mux. A
 // recipe's ingredients must be the user's own foods, which are kept in foods.
-// Recipes are archived and unarchived by updating them, and only archived
-// recipes can be deleted (see recipe.Store.Delete).
+// Responses include each recipe's nutrition, worked out from its foods' current
+// values. Recipes are archived and unarchived by updating them, and only
+// archived recipes can be deleted (see recipe.Store.Delete).
 func handleRecipes(mux *http.ServeMux, recipes recipe.Store, foods food.Store) {
 	handlers := recipeHandlers{recipes: recipes, foods: foods}
 	mux.HandleFunc("GET /api/recipes", handlers.list)
@@ -97,17 +150,22 @@ func (h recipeHandlers) list(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result := make([]recipeJSON, 0, len(list))
+	foods, ok := h.foodsByID(resp, req)
+	if !ok {
+		return
+	}
+
+	result := make([]recipeResponseJSON, 0, len(list))
 	for _, item := range list {
-		result = append(result, toRecipeJSON(item))
+		result = append(result, toRecipeResponse(item, foods))
 	}
 
 	writeJSON(resp, req, http.StatusOK, result)
 }
 
 func (h recipeHandlers) create(resp http.ResponseWriter, req *http.Request) {
-	input, ok := readRecipe(resp, req)
-	if !ok || !h.checkIngredients(resp, req, input) {
+	input, foods, ok := h.readRecipe(resp, req)
+	if !ok {
 		return
 	}
 
@@ -118,7 +176,7 @@ func (h recipeHandlers) create(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	resp.Header().Set("Location", "/api/recipes/"+created.ID)
-	writeJSON(resp, req, http.StatusCreated, toRecipeJSON(created))
+	writeJSON(resp, req, http.StatusCreated, toRecipeResponse(created, foods))
 }
 
 func (h recipeHandlers) get(resp http.ResponseWriter, req *http.Request) {
@@ -128,12 +186,17 @@ func (h recipeHandlers) get(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeJSON(resp, req, http.StatusOK, toRecipeJSON(got))
+	foods, ok := h.foodsByID(resp, req)
+	if !ok {
+		return
+	}
+
+	writeJSON(resp, req, http.StatusOK, toRecipeResponse(got, foods))
 }
 
 func (h recipeHandlers) update(resp http.ResponseWriter, req *http.Request) {
-	input, ok := readRecipe(resp, req)
-	if !ok || !h.checkIngredients(resp, req, input) {
+	input, foods, ok := h.readRecipe(resp, req)
+	if !ok {
 		return
 	}
 
@@ -146,7 +209,7 @@ func (h recipeHandlers) update(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeJSON(resp, req, http.StatusOK, toRecipeJSON(updated))
+	writeJSON(resp, req, http.StatusOK, toRecipeResponse(updated, foods))
 }
 
 func (h recipeHandlers) delete(resp http.ResponseWriter, req *http.Request) {
@@ -164,28 +227,29 @@ func (h recipeHandlers) delete(resp http.ResponseWriter, req *http.Request) {
 	resp.WriteHeader(http.StatusNoContent)
 }
 
-// checkIngredients checks that a recipe's ingredients are all the signed-in
-// user's foods, archived or not, and that each named serving is one of its
-// food's servings. If they aren't, it responds with a 400 (or a 500 if the
-// foods can't be listed) and returns false.
-func (h recipeHandlers) checkIngredients(resp http.ResponseWriter, req *http.Request, item recipe.Recipe) bool {
-	if len(item.Ingredients) == 0 {
-		return true
-	}
-
-	foods, err := h.foods.List(req.Context(), owner(req))
+// foodsByID returns the signed-in user's foods, archived or not, by ID. If they
+// can't be listed, it responds with a 500 and returns false.
+func (h recipeHandlers) foodsByID(resp http.ResponseWriter, req *http.Request) (map[string]food.Food, bool) {
+	list, err := h.foods.List(req.Context(), owner(req))
 	if err != nil {
 		storeError(resp, req, err)
-		return false
+		return nil, false
 	}
 
-	known := make(map[string]food.Food, len(foods))
-	for _, f := range foods {
-		known[f.ID] = f
+	foods := make(map[string]food.Food, len(list))
+	for _, item := range list {
+		foods[item.ID] = item
 	}
 
+	return foods, true
+}
+
+// checkIngredients checks that a recipe's ingredients are all in foods, which
+// holds the signed-in user's foods by ID, and that each named serving is one of
+// its food's servings. If they aren't, it responds with a 400 and returns false.
+func checkIngredients(resp http.ResponseWriter, item recipe.Recipe, foods map[string]food.Food) bool {
 	for index, ingredient := range item.Ingredients {
-		ingredientFood, ok := known[ingredient.FoodID]
+		ingredientFood, ok := foods[ingredient.FoodID]
 		if !ok {
 			message := fmt.Sprintf("Ingredient %d: there's no food with the ID %q.", index+1, ingredient.FoodID)
 			http.Error(resp, message, http.StatusBadRequest)
@@ -213,19 +277,28 @@ func (h recipeHandlers) checkIngredients(resp http.ResponseWriter, req *http.Req
 	return true
 }
 
-// readRecipe decodes and validates the recipe in a request's body. If that
-// fails, it responds with a 400 and returns false.
-func readRecipe(resp http.ResponseWriter, req *http.Request) (recipe.Recipe, bool) {
+// readRecipe decodes and validates the recipe in a request's body, and checks
+// its ingredients against the signed-in user's foods, which it returns by ID.
+// If that fails, it responds with a 400 (or a 500 if the foods can't be listed)
+// and returns false.
+func (h recipeHandlers) readRecipe(
+	resp http.ResponseWriter, req *http.Request,
+) (recipe.Recipe, map[string]food.Food, bool) {
 	var input recipeJSON
 	if !decodeBody(resp, req, &input, "recipe") {
-		return recipe.Recipe{}, false
+		return recipe.Recipe{}, nil, false
 	}
 
 	parsed := fromRecipeJSON(input)
 	if err := parsed.Validate(); err != nil {
 		http.Error(resp, err.Error(), http.StatusBadRequest)
-		return recipe.Recipe{}, false
+		return recipe.Recipe{}, nil, false
 	}
 
-	return parsed, true
+	foods, ok := h.foodsByID(resp, req)
+	if !ok || !checkIngredients(resp, parsed, foods) {
+		return recipe.Recipe{}, nil, false
+	}
+
+	return parsed, foods, true
 }

@@ -367,9 +367,19 @@ func TestFoodsStoreError(t *testing.T) {
 func withoutID(t *testing.T, body string) string {
 	t.Helper()
 
+	return withoutFields(t, body, "id")
+}
+
+// withoutFields returns body, a JSON object, without the given fields.
+func withoutFields(t *testing.T, body string, names ...string) string {
+	t.Helper()
+
 	var fields map[string]any
 	require.NoError(t, json.Unmarshal([]byte(body), &fields))
-	delete(fields, "id")
+
+	for _, name := range names {
+		delete(fields, name)
+	}
 
 	result, err := json.Marshal(fields)
 	require.NoError(t, err)

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
+	"github.com/lafeingcrokodil/diary/internal/nutrient/nutrienttest"
 	"github.com/lafeingcrokodil/diary/internal/recipe"
 	"github.com/lafeingcrokodil/diary/internal/recipe/recipetest"
 	"github.com/lafeingcrokodil/diary/internal/server"
@@ -26,15 +27,30 @@ type recipeJSON struct {
 		Amount  float64 `json:"amount"`
 		Note    string  `json:"note"`
 	} `json:"ingredients"`
-	Steps    []string `json:"steps"`
-	Notes    string   `json:"notes"`
-	Archived bool     `json:"archived"`
+	Steps     []string      `json:"steps"`
+	Notes     string        `json:"notes"`
+	Archived  bool          `json:"archived"`
+	Nutrition nutritionJSON `json:"nutrition"`
+}
+
+type nutritionJSON struct {
+	Kcal      totalJSON            `json:"kcal"`
+	Nutrients map[string]totalJSON `json:"nutrients"`
+}
+
+type totalJSON struct {
+	Amount  float64 `json:"amount"`
+	Missing []int   `json:"missing"`
 }
 
 // newRecipesAPI returns an api whose recipes are kept in store, and whose foods
-// are kept in memory.
+// and nutrients are kept in memory.
 func newRecipesAPI(store recipe.Store) api {
-	return newAPI(server.Stores{Foods: foodtest.NewMemoryStore(), Recipes: store})
+	return newAPI(server.Stores{
+		Foods:     foodtest.NewMemoryStore(),
+		Nutrients: nutrienttest.NewMemoryStore(),
+		Recipes:   store,
+	})
 }
 
 // sandwich returns a recipe made with two slices of the food with the given ID
@@ -83,7 +99,7 @@ func TestRecipes(t *testing.T) {
 		created := decodeRecipe(t, rec)
 		assert.NotEmpty(t, created.ID)
 		assert.Equal(t, "/api/recipes/"+created.ID, rec.Header().Get("Location"))
-		assert.JSONEq(t, sandwich(breadID), withoutID(t, rec.Body.String()))
+		assert.JSONEq(t, sandwich(breadID), withoutFields(t, rec.Body.String(), "id", "nutrition"))
 
 		rec = recipes.do(t, http.MethodGet, "/api/recipes/"+created.ID, alice, "")
 		require.Equal(t, http.StatusOK, rec.Code)
@@ -113,8 +129,9 @@ func TestRecipes(t *testing.T) {
 		rec := recipes.do(t, http.MethodPost, "/api/recipes", alice, `{"name":"Idea"}`)
 		require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
 
-		body := `{"name":"Idea","sourceUrl":"","ingredients":[],"steps":[],"notes":"","archived":false}`
-		assert.JSONEq(t, body, withoutID(t, rec.Body.String()))
+		body := `{"name":"Idea","sourceUrl":"","ingredients":[],"steps":[],"notes":"","archived":false,` +
+			`"nutrition":{"kcal":{"amount":0,"missing":[]},"nutrients":{}}}`
+		assert.JSONEq(t, body, withoutFields(t, rec.Body.String(), "id"))
 	})
 
 	t.Run("update", func(t *testing.T) {
@@ -261,11 +278,100 @@ func TestRecipeIngredients(t *testing.T) {
 	t.Run("foods can't be listed", func(t *testing.T) {
 		t.Parallel()
 
-		recipes := newAPI(server.Stores{Foods: failingFoodStore{}, Recipes: recipetest.NewMemoryStore()})
+		store := recipetest.NewMemoryStore()
+		created, err := store.Create(t.Context(), alice, recipe.Recipe{Name: "Idea"})
+		require.NoError(t, err)
 
-		rec := recipes.do(t, http.MethodPost, "/api/recipes", alice, sandwich("bread"))
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		recipes := newAPI(server.Stores{Foods: failingFoodStore{}, Recipes: store})
+		path := "/api/recipes/" + created.ID
+
+		requests := []struct{ method, path, body string }{
+			{http.MethodGet, "/api/recipes", ""},
+			{http.MethodPost, "/api/recipes", sandwich("bread")},
+			{http.MethodGet, path, ""},
+			{http.MethodPut, path, sandwich("bread")},
+		}
+
+		for _, request := range requests {
+			rec := recipes.do(t, request.method, request.path, alice, request.body)
+			assert.Equal(t, http.StatusInternalServerError, rec.Code, request.method+" "+request.path)
+		}
 	})
+}
+
+func TestRecipeNutrition(t *testing.T) {
+	t.Parallel()
+
+	api := newRecipesAPI(recipetest.NewMemoryStore())
+	proteinID := api.createProtein(t).ID
+
+	// Bread has 8.5 g of protein per 100 g, while the protein in butter isn't
+	// known.
+	breadBody := strings.Replace(bread, `"nutrients":{}`, `"nutrients":{"`+proteinID+`":8.5}`, 1)
+	rec := api.do(t, http.MethodPost, "/api/foods", alice, breadBody)
+	require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+
+	breadID := decodeFood(t, rec).ID
+
+	butterBody := `{"name":"Butter","unit":"g","kcalPer100":740,"servings":[]}`
+	rec = api.do(t, http.MethodPost, "/api/foods", alice, butterBody)
+	require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+
+	butterID := decodeFood(t, rec).ID
+
+	body := `{"name":"Buttered toast","ingredients":[` +
+		`{"foodId":"` + breadID + `","serving":"slice","amount":2},` +
+		`{"foodId":"` + butterID + `","amount":10}]}`
+	rec = api.do(t, http.MethodPost, "/api/recipes", alice, body)
+	require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+
+	created := decodeRecipe(t, rec)
+
+	want := nutritionJSON{
+		// 210 kcal per 100 g * 80 g + 740 kcal per 100 g * 10 g
+		Kcal: totalJSON{Amount: 242, Missing: []int{}},
+		// 8.5 g per 100 g * 80 g, with butter's protein unknown.
+		Nutrients: map[string]totalJSON{proteinID: {Amount: 6.8, Missing: []int{1}}},
+	}
+
+	assertNutrition(t, want, created.Nutrition)
+
+	// The nutrition is worked out from the foods' current values.
+	rec = api.do(t, http.MethodPut, "/api/foods/"+butterID, alice,
+		`{"name":"Butter","unit":"g","kcalPer100":720,"servings":[],"nutrients":{"`+proteinID+`":1}}`)
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+
+	want = nutritionJSON{
+		Kcal:      totalJSON{Amount: 240, Missing: []int{}},
+		Nutrients: map[string]totalJSON{proteinID: {Amount: 6.9, Missing: []int{}}},
+	}
+
+	rec = api.do(t, http.MethodGet, "/api/recipes/"+created.ID, alice, "")
+	require.Equal(t, http.StatusOK, rec.Code)
+	assertNutrition(t, want, decodeRecipe(t, rec).Nutrition)
+
+	rec = api.do(t, http.MethodGet, "/api/recipes", alice, "")
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var list []recipeJSON
+	decode(t, rec, &list)
+	require.Len(t, list, 1)
+	assertNutrition(t, want, list[0].Nutrition)
+}
+
+// assertNutrition checks that got matches want, allowing for rounding errors in
+// the amounts.
+func assertNutrition(t *testing.T, want, got nutritionJSON) {
+	t.Helper()
+
+	assert.InDelta(t, want.Kcal.Amount, got.Kcal.Amount, 1e-9)
+	assert.Equal(t, want.Kcal.Missing, got.Kcal.Missing)
+	assert.Len(t, got.Nutrients, len(want.Nutrients))
+
+	for id, total := range want.Nutrients {
+		assert.InDelta(t, total.Amount, got.Nutrients[id].Amount, 1e-9, id)
+		assert.Equal(t, total.Missing, got.Nutrients[id].Missing, id)
+	}
 }
 
 func TestRecipesInvalidInput(t *testing.T) {
@@ -278,6 +384,7 @@ func TestRecipesInvalidInput(t *testing.T) {
 		{"not JSON", "soup"},
 		{"wrong type", `{"name":"Soup","steps":"Boil."}`},
 		{"unknown field", `{"name":"Soup","servings":4}`},
+		{"nutrition", `{"name":"Soup","nutrition":{"kcal":{"amount":100,"missing":[]},"nutrients":{}}}`},
 		{"invalid recipe", `{"name":""}`},
 		{"invalid ingredient", `{"name":"Soup","ingredients":[{"foodId":"bread","amount":0}]}`},
 		{"too large", `{"name":"` + strings.Repeat("a", 1<<20) + `"}`},
