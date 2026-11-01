@@ -15,6 +15,7 @@ import (
 
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
+	"github.com/lafeingcrokodil/diary/internal/nutrient/nutrienttest"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
@@ -22,7 +23,7 @@ const (
 	alice = "alice"
 	bob   = "bob"
 	bread = `{"name":"Rye bread","brand":"Bakery","unit":"g","kcalPer100":210,` +
-		`"servings":[{"name":"slice","amount":40}]}`
+		`"servings":[{"name":"slice","amount":40}],"nutrients":{}}`
 )
 
 type foodJSON struct {
@@ -35,6 +36,7 @@ type foodJSON struct {
 		Name   string  `json:"name"`
 		Amount float64 `json:"amount"`
 	} `json:"servings"`
+	Nutrients map[string]float64 `json:"nutrients"`
 }
 
 // api sends requests to a server whose data is kept in stores.
@@ -46,9 +48,10 @@ func newAPI(stores server.Stores) api {
 	return api{handler: server.New(fstest.MapFS{"index.html": {Data: []byte(indexHTML)}}, fakeAuth, stores)}
 }
 
-// newFoodsAPI returns an api whose foods are kept in store.
+// newFoodsAPI returns an api whose foods are kept in store, and whose
+// nutrients are kept in memory.
 func newFoodsAPI(store food.Store) api {
-	return newAPI(server.Stores{Foods: store})
+	return newAPI(server.Stores{Foods: store, Nutrients: nutrienttest.NewMemoryStore()})
 }
 
 // do sends a request as user (none if empty) and returns the response.
@@ -199,6 +202,74 @@ func TestFoods(t *testing.T) {
 	})
 }
 
+func TestFoodNutrients(t *testing.T) {
+	t.Parallel()
+
+	// withNutrients returns bread with the given "nutrients" JSON object.
+	withNutrients := func(nutrients string) string {
+		return strings.Replace(bread, `"nutrients":{}`, `"nutrients":`+nutrients, 1)
+	}
+
+	t.Run("amounts of the user's nutrients, archived or not", func(t *testing.T) {
+		t.Parallel()
+
+		api := newFoodsAPI(foodtest.NewMemoryStore())
+		protein := api.createProtein(t)
+		fibre := api.createProtein(t)
+		api.archive(t, fibre)
+
+		body := withNutrients(`{"` + protein.ID + `":8.5,"` + fibre.ID + `":6}`)
+
+		rec := api.do(t, http.MethodPost, "/api/foods", alice, body)
+		require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+
+		created := decodeFood(t, rec)
+		assert.Equal(t, map[string]float64{protein.ID: 8.5, fibre.ID: 6}, created.Nutrients)
+
+		rec = api.do(t, http.MethodPut, "/api/foods/"+created.ID, alice, withNutrients(`{"`+protein.ID+`":9}`))
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+
+		rec = api.do(t, http.MethodGet, "/api/foods/"+created.ID, alice, "")
+		assert.Equal(t, map[string]float64{protein.ID: 9}, decodeFood(t, rec).Nutrients)
+	})
+
+	t.Run("amounts of unknown nutrients", func(t *testing.T) {
+		t.Parallel()
+
+		api := newFoodsAPI(foodtest.NewMemoryStore())
+		created := api.createBread(t)
+
+		// A nutrient that belongs to another user is as unknown as a missing one.
+		rec := api.do(t, http.MethodPost, "/api/nutrients", bob, protein)
+		require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+
+		bobsNutrient := decodeNutrient(t, rec)
+
+		for _, id := range []string{"missing", bobsNutrient.ID} {
+			body := withNutrients(`{"` + id + `":1}`)
+
+			rec := api.do(t, http.MethodPost, "/api/foods", alice, body)
+			assert.Equal(t, http.StatusBadRequest, rec.Code, id)
+			assert.Contains(t, rec.Body.String(), id)
+
+			rec = api.do(t, http.MethodPut, "/api/foods/"+created.ID, alice, body)
+			assert.Equal(t, http.StatusBadRequest, rec.Code, id)
+		}
+
+		rec = api.do(t, http.MethodGet, "/api/foods/"+created.ID, alice, "")
+		assert.Empty(t, decodeFood(t, rec).Nutrients)
+	})
+
+	t.Run("nutrients can't be listed", func(t *testing.T) {
+		t.Parallel()
+
+		api := newAPI(server.Stores{Foods: foodtest.NewMemoryStore(), Nutrients: failingNutrientStore{}})
+
+		rec := api.do(t, http.MethodPost, "/api/foods", alice, withNutrients(`{"protein":1}`))
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	})
+}
+
 func TestFoodsInvalidInput(t *testing.T) {
 	t.Parallel()
 
@@ -210,6 +281,7 @@ func TestFoodsInvalidInput(t *testing.T) {
 		{"wrong type", `{"name":"Rye bread","unit":"g","kcalPer100":"lots"}`},
 		{"unknown field", `{"name":"Rye bread","unit":"g","kcalPer100":210,"colour":"brown"}`},
 		{"invalid food", `{"name":"","unit":"g","kcalPer100":210}`},
+		{"negative nutrient amount", `{"name":"Rye bread","unit":"g","kcalPer100":210,"nutrients":{"protein":-1}}`},
 		{"too large", `{"name":"` + strings.Repeat("a", 1<<20) + `","unit":"g"}`},
 	}
 

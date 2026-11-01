@@ -31,8 +31,8 @@ func (s *MemoryStore) Create(_ context.Context, owner string, item food.Food) (f
 
 	item.ID = rand.Text()
 	item.Owner = owner
-	// Only the stored copy needs its own servings: the returned food shares
-	// them with the caller's input, which the store doesn't keep.
+	// Only the stored copy needs its own servings and nutrients: the returned
+	// food shares them with the caller's input, which the store doesn't keep.
 	s.foods[item.ID] = clone(item)
 
 	return item, nil
@@ -100,10 +100,11 @@ func (s *MemoryStore) Delete(_ context.Context, owner, id string) error {
 	return nil
 }
 
-// clone copies item's servings, so that the store and its callers don't share
-// them.
+// clone copies item's servings and nutrients, so that the store and its
+// callers don't share them.
 func clone(item food.Food) food.Food {
 	item.Servings = slices.Clone(item.Servings)
+	item.Nutrients = maps.Clone(item.Nutrients)
 
 	return item
 }

@@ -20,6 +20,8 @@ type foodDoc struct {
 	Unit       string       `firestore:"unit"`
 	KcalPer100 float64      `firestore:"kcalPer100"`
 	Servings   []servingDoc `firestore:"servings"`
+	// Nutrients is keyed by nutrient ID.
+	Nutrients map[string]float64 `firestore:"nutrients"`
 }
 
 func (d foodDoc) owner() string { return d.Owner }
@@ -42,6 +44,7 @@ func toDoc(owner string, item food.Food) foodDoc {
 		Unit:       string(item.Unit),
 		KcalPer100: item.KcalPer100,
 		Servings:   servings,
+		Nutrients:  item.Nutrients,
 	}
 }
 
@@ -59,6 +62,7 @@ func fromDoc(id string, doc foodDoc) food.Food {
 		Unit:       food.Unit(doc.Unit),
 		KcalPer100: doc.KcalPer100,
 		Servings:   servings,
+		Nutrients:  doc.Nutrients,
 	}
 }
 

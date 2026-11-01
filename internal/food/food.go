@@ -38,6 +38,10 @@ type Food struct {
 	Unit       Unit
 	KcalPer100 float64
 	Servings   []Serving
+	// Nutrients maps the IDs of the owner's nutrients to the amount of each
+	// per 100 of the food's unit, in the nutrient's own unit. Nutrients that
+	// aren't in the map have an unknown amount, rather than none.
+	Nutrients map[string]float64
 }
 
 // ErrInvalid is wrapped by the errors that Validate returns.
@@ -58,9 +62,17 @@ func (f Food) Validate() error {
 		return fmt.Errorf("%w: the energy can't be negative", ErrInvalid)
 	}
 
-	names := make(map[string]bool, len(f.Servings))
+	if err := validateServings(f.Servings); err != nil {
+		return err
+	}
 
-	for _, serving := range f.Servings {
+	return validateNutrients(f.Nutrients)
+}
+
+func validateServings(servings []Serving) error {
+	names := make(map[string]bool, len(servings))
+
+	for _, serving := range servings {
 		if serving.Name == "" {
 			return fmt.Errorf("%w: every serving needs a name", ErrInvalid)
 		}
@@ -74,6 +86,20 @@ func (f Food) Validate() error {
 		}
 
 		names[serving.Name] = true
+	}
+
+	return nil
+}
+
+func validateNutrients(nutrients map[string]float64) error {
+	for id, amount := range nutrients {
+		if id == "" {
+			return fmt.Errorf("%w: every nutrient amount needs a nutrient ID", ErrInvalid)
+		}
+
+		if amount < 0 {
+			return fmt.Errorf("%w: the amount of nutrient %q can't be negative", ErrInvalid, id)
+		}
 	}
 
 	return nil
