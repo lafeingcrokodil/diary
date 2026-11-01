@@ -93,10 +93,14 @@ describe('getFood', () => {
 		expect(sentRequest().path).toBe('/api/foods/a%2Fb');
 	});
 
-	it('reports a missing food', async () => {
-		respond('not found', STATUS_NOT_FOUND);
+	it('reports a missing food, with the reason the API gave', async () => {
+		fetchMock.mockResolvedValueOnce(
+			new Response('404 page not found\n', { status: STATUS_NOT_FOUND })
+		);
 
-		await expect(getFood('missing')).rejects.toBeInstanceOf(ApiError);
+		const error: unknown = await getFood('missing').catch((error_: unknown) => error_);
+		expect(error).toBeInstanceOf(ApiError);
+		expect(String(error)).toContain('404 page not found');
 	});
 
 	it('rejects an invalid response', async () => {

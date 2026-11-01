@@ -62,6 +62,9 @@ export default defineConfig(
 			// Many types from libraries can't be made read-only, so this rule
 			// would require frequent exceptions.
 			'@typescript-eslint/prefer-readonly-parameter-types': 'off',
+			// 0 and 1 (e.g. in comparisons with a length, or to step through a
+			// list) are clearer as literals than as named constants.
+			'@typescript-eslint/no-magic-numbers': ['error', { ignore: [0, 1] }],
 			// The rule's defaults, plus an exception for property names that need
 			// quotes (e.g. 'no-undef' as the name of an ESLint rule).
 			'@typescript-eslint/naming-convention': [
@@ -82,6 +85,16 @@ export default defineConfig(
 				{ selector: 'typeLike', format: ['PascalCase'] },
 				{ selector: 'objectLiteralProperty', modifiers: ['requiresQuotes'], format: null }
 			]
+		}
+	},
+	{
+		// Tests group their cases in describe callbacks, which grow with each
+		// case, so splitting them up to stay within a length limit doesn't make
+		// them easier to follow.
+		files: ['**/*.test.ts'],
+		rules: {
+			'max-lines-per-function': 'off',
+			'max-statements': 'off'
 		}
 	}
 );

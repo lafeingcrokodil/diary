@@ -2,12 +2,17 @@ import { idToken } from '#lib/auth.svelte.ts';
 
 const STATUS_FORBIDDEN = 403;
 
-// An error response from the API.
+// An error response from the API. Its message includes the reason that the API
+// gave, if any (e.g. why a food is invalid).
 export class ApiError extends Error {
 	public readonly status: number;
 
-	public constructor(status: number) {
-		super(`The API responded with status ${String(status)}.`);
+	public constructor(status: number, reason = '') {
+		super(
+			reason === ''
+				? `The API responded with status ${String(status)}.`
+				: `The API responded with status ${String(status)}: ${reason}`
+		);
 		this.name = 'ApiError';
 		this.status = status;
 	}
@@ -26,7 +31,7 @@ export const apiFetch = async (path: string, init: RequestInit = {}): Promise<Re
 
 	const response = await fetch(path, { ...init, headers });
 	if (!response.ok) {
-		throw new ApiError(response.status);
+		throw new ApiError(response.status, (await response.text()).trim());
 	}
 	return response;
 };
