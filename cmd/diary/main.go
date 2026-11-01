@@ -74,8 +74,9 @@ func main() {
 }
 
 // authConfig reads the ID of the Firebase project whose users can sign in, and
-// whose Firestore database the app uses (FIREBASE_PROJECT_ID), and the comma-separated email addresses of the users
-// who are allowed to use the app (ALLOWED_EMAILS). Both are required.
+// whose Firestore database the app uses (FIREBASE_PROJECT_ID), and the
+// comma-separated email addresses of the users who are allowed to use the app
+// (ALLOWED_EMAILS). Both are required.
 func authConfig() (string, []string, error) {
 	projectID := os.Getenv("FIREBASE_PROJECT_ID")
 	if projectID == "" {
