@@ -359,6 +359,106 @@ func TestRecipeNutrition(t *testing.T) {
 	assertNutrition(t, want, list[0].Nutrition)
 }
 
+func TestFoodsUsedByRecipes(t *testing.T) {
+	t.Parallel()
+
+	t.Run("changes that keep recipes' amounts", func(t *testing.T) {
+		t.Parallel()
+
+		api := newRecipesAPI(recipetest.NewMemoryStore())
+		breadID := api.createSandwich(t).Ingredients[0].FoodID
+
+		// Resizing a serving, adding another and archiving the food keep the
+		// meaning of the sandwich's amounts.
+		changed := strings.Replace(bread, `{"name":"slice","amount":40}`,
+			`{"name":"slice","amount":45},{"name":"loaf","amount":750}`, 1)
+		changed = strings.Replace(changed, `"archived":false`, `"archived":true`, 1)
+
+		rec := api.do(t, http.MethodPut, "/api/foods/"+breadID, alice, changed)
+		assert.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	})
+
+	t.Run("changes that would change recipes' amounts", func(t *testing.T) {
+		t.Parallel()
+
+		api := newRecipesAPI(recipetest.NewMemoryStore())
+		breadID := api.createSandwich(t).Ingredients[0].FoodID
+
+		tests := []struct{ name, body, wantMessage string }{
+			{
+				"change the unit",
+				strings.Replace(bread, `"unit":"g"`, `"unit":"ml"`, 1),
+				`the unit can't be changed, because the food is used in "Open sandwich"`,
+			},
+			{
+				"rename a serving",
+				strings.Replace(bread, `"name":"slice"`, `"name":"thick slice"`, 1),
+				`the serving "slice" can't be renamed or removed, because it's used in "Open sandwich"`,
+			},
+			{
+				"remove a serving",
+				strings.Replace(bread, `[{"name":"slice","amount":40}]`, `[]`, 1),
+				`the serving "slice" can't be renamed or removed`,
+			},
+		}
+
+		for _, test := range tests {
+			rec := api.do(t, http.MethodPut, "/api/foods/"+breadID, alice, test.body)
+			assert.Equal(t, http.StatusConflict, rec.Code, test.name)
+			assert.Contains(t, rec.Body.String(), test.wantMessage, test.name)
+		}
+
+		rec := api.do(t, http.MethodGet, "/api/foods/"+breadID, alice, "")
+		assert.JSONEq(t, bread, withoutID(t, rec.Body.String()))
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		t.Parallel()
+
+		api := newRecipesAPI(recipetest.NewMemoryStore())
+		created := api.createSandwich(t)
+		breadID := created.Ingredients[0].FoodID
+		api.archiveFood(t, foodJSON{ID: breadID})
+
+		rec := api.do(t, http.MethodDelete, "/api/foods/"+breadID, alice, "")
+		assert.Equal(t, http.StatusConflict, rec.Code)
+		assert.Contains(t, rec.Body.String(), `the food can't be deleted, because it's used in "Open sandwich"`)
+
+		// Archived recipes still use the food, so deleting the recipe is what
+		// allows deleting the food.
+		archived := strings.Replace(sandwich(breadID), `"archived":false`, `"archived":true`, 1)
+		rec = api.do(t, http.MethodPut, "/api/recipes/"+created.ID, alice, archived)
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+
+		rec = api.do(t, http.MethodDelete, "/api/foods/"+breadID, alice, "")
+		assert.Equal(t, http.StatusConflict, rec.Code)
+
+		rec = api.do(t, http.MethodDelete, "/api/recipes/"+created.ID, alice, "")
+		require.Equal(t, http.StatusNoContent, rec.Code)
+
+		rec = api.do(t, http.MethodDelete, "/api/foods/"+breadID, alice, "")
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+	})
+
+	t.Run("recipes can't be listed", func(t *testing.T) {
+		t.Parallel()
+
+		foods := foodtest.NewMemoryStore()
+		created, err := foods.Create(t.Context(), alice, foodtest.Bread())
+		require.NoError(t, err)
+
+		api := newAPI(server.Stores{
+			Foods:     foods,
+			Nutrients: nutrienttest.NewMemoryStore(),
+			Recipes:   failingRecipeStore{},
+		})
+		path := "/api/foods/" + created.ID
+
+		assert.Equal(t, http.StatusInternalServerError, api.do(t, http.MethodPut, path, alice, bread).Code)
+		assert.Equal(t, http.StatusInternalServerError, api.do(t, http.MethodDelete, path, alice, "").Code)
+	})
+}
+
 // assertNutrition checks that got matches want, allowing for rounding errors in
 // the amounts.
 func assertNutrition(t *testing.T, want, got nutritionJSON) {
