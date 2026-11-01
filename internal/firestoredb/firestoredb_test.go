@@ -17,6 +17,8 @@ import (
 	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
 	"github.com/lafeingcrokodil/diary/internal/nutrient"
 	"github.com/lafeingcrokodil/diary/internal/nutrient/nutrienttest"
+	"github.com/lafeingcrokodil/diary/internal/recipe"
+	"github.com/lafeingcrokodil/diary/internal/recipe/recipetest"
 )
 
 // emulatorTimeout is how long the tests wait for the Firestore emulator to
@@ -52,6 +54,16 @@ func TestFoodStore(t *testing.T) {
 		t.Helper()
 
 		return firestoredb.NewFoodStore(newClient(t))
+	})
+}
+
+func TestRecipeStore(t *testing.T) {
+	t.Parallel()
+
+	recipetest.CheckStore(t, func(t *testing.T) recipe.Store {
+		t.Helper()
+
+		return firestoredb.NewRecipeStore(newClient(t))
 	})
 }
 

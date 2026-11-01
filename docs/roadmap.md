@@ -93,7 +93,7 @@ deleted, have its unit changed, or have a serving that the recipe uses renamed
 or removed.
 
 - [x] Domain types and storage interface (in-memory implementation)
-- [ ] Firestore implementation, tested against the emulator
+- [x] Firestore implementation, tested against the emulator
 - [ ] CRUD API, with archiving and permanent deletion
 - [ ] Computed nutrition (domain function and API)
 - [ ] Protecting foods that recipes use (deletion, unit changes, servings)
