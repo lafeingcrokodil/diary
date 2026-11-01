@@ -26,9 +26,10 @@ linters:
     - noinlineerr
   settings:
     varnamelen:
-      # "id" is as clear as a longer name would be.
+      # These are as clear as longer names would be.
       ignore-names:
         - id
+        - tx # A transaction.
     wsl_v5:
       disable:
         - return
@@ -37,11 +38,20 @@ linters:
       # Table-driven tests repeat paths and test names in their cases, which
       # are easier to read as literals than as constants, and they grow with
       # each case, so splitting them up to stay within a length limit doesn't
-      # make them easier to follow.
+      # make them easier to follow. The same goes for test helper packages,
+      # whose code only runs in tests (keep the list in sync with TEST_HELPERS
+      # in the Makefile).
       - path: _test\.go
         linters:
           - funlen
           - goconst
+      - path: ^internal/food/foodtest/
+        linters:
+          - funlen
+          - goconst
+          # Test data, such as a food's energy, reads better as literals. (mnd
+          # already skips _test.go files by default.)
+          - mnd
 
 formatters:
   enable:

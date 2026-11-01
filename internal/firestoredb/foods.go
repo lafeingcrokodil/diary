@@ -1,0 +1,222 @@
+// Package firestoredb stores the app's data in Firestore.
+package firestoredb
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+
+	"cloud.google.com/go/firestore"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/lafeingcrokodil/diary/internal/food"
+)
+
+// foodsCollection holds every user's foods, with each food's owner in a field.
+const foodsCollection = "foods"
+
+// foodDoc is how a food is stored. The food's ID is the document's ID.
+type foodDoc struct {
+	Owner      string       `firestore:"owner"`
+	Name       string       `firestore:"name"`
+	Brand      string       `firestore:"brand"`
+	Unit       string       `firestore:"unit"`
+	KcalPer100 float64      `firestore:"kcalPer100"`
+	Servings   []servingDoc `firestore:"servings"`
+}
+
+type servingDoc struct {
+	Name   string  `firestore:"name"`
+	Amount float64 `firestore:"amount"`
+}
+
+func toDoc(owner string, item food.Food) foodDoc {
+	servings := make([]servingDoc, 0, len(item.Servings))
+	for _, serving := range item.Servings {
+		servings = append(servings, servingDoc(serving))
+	}
+
+	return foodDoc{
+		Owner:      owner,
+		Name:       item.Name,
+		Brand:      item.Brand,
+		Unit:       string(item.Unit),
+		KcalPer100: item.KcalPer100,
+		Servings:   servings,
+	}
+}
+
+func fromDoc(id string, doc foodDoc) food.Food {
+	servings := make([]food.Serving, 0, len(doc.Servings))
+	for _, serving := range doc.Servings {
+		servings = append(servings, food.Serving(serving))
+	}
+
+	return food.Food{
+		ID:         id,
+		Owner:      doc.Owner,
+		Name:       doc.Name,
+		Brand:      doc.Brand,
+		Unit:       food.Unit(doc.Unit),
+		KcalPer100: doc.KcalPer100,
+		Servings:   servings,
+	}
+}
+
+// FoodStore is a food.Store that keeps foods in Firestore.
+type FoodStore struct {
+	client *firestore.Client
+	foods  *firestore.CollectionRef
+}
+
+// NewFoodStore returns a FoodStore that uses client.
+func NewFoodStore(client *firestore.Client) *FoodStore {
+	return &FoodStore{client: client, foods: client.Collection(foodsCollection)}
+}
+
+var _ food.Store = (*FoodStore)(nil)
+
+// Create implements food.Store.
+func (s *FoodStore) Create(ctx context.Context, owner string, item food.Food) (food.Food, error) {
+	ref := s.foods.NewDoc()
+
+	doc := toDoc(owner, item)
+	if _, err := ref.Create(ctx, doc); err != nil {
+		return food.Food{}, fmt.Errorf("creating food: %w", err)
+	}
+
+	return fromDoc(ref.ID, doc), nil
+}
+
+// Get implements food.Store.
+func (s *FoodStore) Get(ctx context.Context, owner, id string) (food.Food, error) {
+	ref := s.doc(id)
+	if ref == nil {
+		return food.Food{}, food.ErrNotFound
+	}
+
+	snapshot, err := ref.Get(ctx)
+
+	doc, err := ownedDoc(owner, snapshot, err)
+	if err != nil {
+		return food.Food{}, err
+	}
+
+	return fromDoc(id, doc), nil
+}
+
+// List implements food.Store.
+func (s *FoodStore) List(ctx context.Context, owner string) ([]food.Food, error) {
+	snapshots, err := s.foods.Where("owner", "==", owner).Documents(ctx).GetAll()
+	if err != nil {
+		return nil, fmt.Errorf("listing foods: %w", err)
+	}
+
+	foods := make([]food.Food, 0, len(snapshots))
+
+	for _, snapshot := range snapshots {
+		var doc foodDoc
+		if err := snapshot.DataTo(&doc); err != nil {
+			return nil, fmt.Errorf("reading food %s: %w", snapshot.Ref.ID, err)
+		}
+
+		foods = append(foods, fromDoc(snapshot.Ref.ID, doc))
+	}
+
+	// Firestore sorts strings case-sensitively, so the store sorts them itself.
+	food.SortByName(foods)
+
+	return foods, nil
+}
+
+// Update implements food.Store.
+func (s *FoodStore) Update(ctx context.Context, owner string, item food.Food) (food.Food, error) {
+	ref := s.doc(item.ID)
+	if ref == nil {
+		return food.Food{}, food.ErrNotFound
+	}
+
+	doc := toDoc(owner, item)
+
+	// Checking the owner and writing happen in one transaction, so that the
+	// food can't change hands in between.
+	err := s.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
+		snapshot, err := tx.Get(ref)
+		if _, err := ownedDoc(owner, snapshot, err); err != nil {
+			return err
+		}
+
+		return tx.Set(ref, doc)
+	})
+	if err != nil {
+		return food.Food{}, wrap("updating food", err)
+	}
+
+	return fromDoc(item.ID, doc), nil
+}
+
+// Delete implements food.Store.
+func (s *FoodStore) Delete(ctx context.Context, owner, id string) error {
+	ref := s.doc(id)
+	if ref == nil {
+		return food.ErrNotFound
+	}
+
+	err := s.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
+		snapshot, err := tx.Get(ref)
+		if _, err := ownedDoc(owner, snapshot, err); err != nil {
+			return err
+		}
+
+		return tx.Delete(ref)
+	})
+
+	return wrap("deleting food", err)
+}
+
+// doc returns the document for the food with the given ID, or nil if no food
+// can have that ID: Firestore rejects empty IDs, and a slash would make the ID
+// a path to a different document.
+func (s *FoodStore) doc(id string) *firestore.DocumentRef {
+	if id == "" || strings.Contains(id, "/") {
+		return nil
+	}
+
+	return s.foods.Doc(id)
+}
+
+// ownedDoc decodes a food that was read from Firestore with the given error,
+// and returns food.ErrNotFound if it doesn't exist or belongs to someone other
+// than owner.
+func ownedDoc(owner string, snapshot *firestore.DocumentSnapshot, err error) (foodDoc, error) {
+	if status.Code(err) == codes.NotFound {
+		return foodDoc{}, food.ErrNotFound
+	}
+
+	if err != nil {
+		return foodDoc{}, fmt.Errorf("reading food: %w", err)
+	}
+
+	var doc foodDoc
+	if err := snapshot.DataTo(&doc); err != nil {
+		return foodDoc{}, fmt.Errorf("reading food %s: %w", snapshot.Ref.ID, err)
+	}
+
+	if doc.Owner != owner {
+		return foodDoc{}, food.ErrNotFound
+	}
+
+	return doc, nil
+}
+
+// wrap adds context to err, unless it's nil or food.ErrNotFound, which callers
+// check for as it is.
+func wrap(action string, err error) error {
+	if err == nil || errors.Is(err, food.ErrNotFound) {
+		return err
+	}
+
+	return fmt.Errorf("%s: %w", action, err)
+}
