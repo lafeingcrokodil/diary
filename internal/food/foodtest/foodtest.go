@@ -24,6 +24,7 @@ func Bread() food.Food {
 		Unit:       food.Grams,
 		KcalPer100: 210,
 		Servings:   []food.Serving{{Name: "slice", Amount: 40}, {Name: "loaf", Amount: 750}},
+		Nutrients:  map[string]float64{"protein": 8.5, "fibre": 6},
 	}
 }
 
@@ -138,6 +139,7 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) food.Store) {
 		changed := created
 		changed.Name = "Wholemeal rye bread"
 		changed.Servings = []food.Serving{{Name: "thin slice", Amount: 25}}
+		changed.Nutrients = map[string]float64{"protein": 9}
 		changed.Owner = bob
 
 		updated, err := store.Update(t.Context(), alice, changed)
@@ -201,6 +203,45 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) food.Store) {
 		got, err := store.Get(t.Context(), alice, alicesFood.ID)
 		require.NoError(t, err)
 		assert.Equal(t, alicesFood, got)
+	})
+
+	t.Run("foods without nutrients", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore(t)
+
+		input := Bread()
+		input.Nutrients = nil
+
+		created, err := store.Create(t.Context(), alice, input)
+		require.NoError(t, err)
+
+		got, err := store.Get(t.Context(), alice, created.ID)
+		require.NoError(t, err)
+		assert.Empty(t, got.Nutrients)
+	})
+
+	t.Run("callers don't share nutrients with the store", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore(t)
+
+		input := Bread()
+		created, err := store.Create(t.Context(), alice, input)
+		require.NoError(t, err)
+
+		input.Nutrients["protein"] = 1
+		created.Nutrients["protein"] = 2
+
+		got, err := store.Get(t.Context(), alice, created.ID)
+		require.NoError(t, err)
+		assert.InDelta(t, 8.5, got.Nutrients["protein"], 0)
+
+		got.Nutrients["protein"] = 3
+
+		again, err := store.Get(t.Context(), alice, created.ID)
+		require.NoError(t, err)
+		assert.InDelta(t, 8.5, again.Nutrients["protein"], 0)
 	})
 
 	t.Run("callers don't share servings with the store", func(t *testing.T) {

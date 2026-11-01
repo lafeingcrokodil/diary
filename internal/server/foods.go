@@ -1,9 +1,13 @@
 package server
 
 import (
+	"maps"
 	"net/http"
+	"slices"
+	"strconv"
 
 	"github.com/lafeingcrokodil/diary/internal/food"
+	"github.com/lafeingcrokodil/diary/internal/nutrient"
 )
 
 // foodJSON is how the API represents a food. The owner is left out: it's
@@ -15,6 +19,8 @@ type foodJSON struct {
 	Unit       food.Unit     `json:"unit"`
 	KcalPer100 float64       `json:"kcalPer100"`
 	Servings   []servingJSON `json:"servings"`
+	// Nutrients maps nutrient IDs to amounts per 100 of the food's unit.
+	Nutrients map[string]float64 `json:"nutrients"`
 }
 
 type servingJSON struct {
@@ -28,6 +34,13 @@ func toFoodJSON(item food.Food) foodJSON {
 		servings = append(servings, servingJSON(serving))
 	}
 
+	// A food without nutrients has an empty object rather than null, so that
+	// clients don't need to handle both.
+	nutrients := item.Nutrients
+	if nutrients == nil {
+		nutrients = map[string]float64{}
+	}
+
 	return foodJSON{
 		ID:         item.ID,
 		Name:       item.Name,
@@ -35,6 +48,7 @@ func toFoodJSON(item food.Food) foodJSON {
 		Unit:       item.Unit,
 		KcalPer100: item.KcalPer100,
 		Servings:   servings,
+		Nutrients:  nutrients,
 	}
 }
 
@@ -51,12 +65,15 @@ func fromFoodJSON(item foodJSON) food.Food {
 		Unit:       item.Unit,
 		KcalPer100: item.KcalPer100,
 		Servings:   servings,
+		Nutrients:  item.Nutrients,
 	}
 }
 
-// handleFoods adds the routes for the signed-in user's foods to mux.
-func handleFoods(mux *http.ServeMux, foods food.Store) {
-	handlers := foodHandlers{foods: foods}
+// handleFoods adds the routes for the signed-in user's foods to mux. A food's
+// nutrient amounts must be for the user's own nutrients, which are kept in
+// nutrients.
+func handleFoods(mux *http.ServeMux, foods food.Store, nutrients nutrient.Store) {
+	handlers := foodHandlers{foods: foods, nutrients: nutrients}
 	mux.HandleFunc("GET /api/foods", handlers.list)
 	mux.HandleFunc("POST /api/foods", handlers.create)
 	mux.HandleFunc("GET /api/foods/{id}", handlers.get)
@@ -65,7 +82,8 @@ func handleFoods(mux *http.ServeMux, foods food.Store) {
 }
 
 type foodHandlers struct {
-	foods food.Store
+	foods     food.Store
+	nutrients nutrient.Store
 }
 
 func (h foodHandlers) list(resp http.ResponseWriter, req *http.Request) {
@@ -85,7 +103,7 @@ func (h foodHandlers) list(resp http.ResponseWriter, req *http.Request) {
 
 func (h foodHandlers) create(resp http.ResponseWriter, req *http.Request) {
 	input, ok := readFood(resp, req)
-	if !ok {
+	if !ok || !h.checkNutrients(resp, req, input) {
 		return
 	}
 
@@ -111,7 +129,7 @@ func (h foodHandlers) get(resp http.ResponseWriter, req *http.Request) {
 
 func (h foodHandlers) update(resp http.ResponseWriter, req *http.Request) {
 	input, ok := readFood(resp, req)
-	if !ok {
+	if !ok || !h.checkNutrients(resp, req, input) {
 		return
 	}
 
@@ -134,6 +152,36 @@ func (h foodHandlers) delete(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	resp.WriteHeader(http.StatusNoContent)
+}
+
+// checkNutrients checks that a food's nutrient amounts are all for the
+// signed-in user's nutrients, archived or not. If they aren't, it responds with
+// a 400 (or a 500 if the nutrients can't be listed) and returns false.
+func (h foodHandlers) checkNutrients(resp http.ResponseWriter, req *http.Request, item food.Food) bool {
+	if len(item.Nutrients) == 0 {
+		return true
+	}
+
+	nutrients, err := h.nutrients.List(req.Context(), owner(req))
+	if err != nil {
+		storeError(resp, req, err)
+		return false
+	}
+
+	known := make(map[string]bool, len(nutrients))
+	for _, n := range nutrients {
+		known[n.ID] = true
+	}
+
+	// Sorted, so that the error names the same nutrient each time.
+	for _, id := range slices.Sorted(maps.Keys(item.Nutrients)) {
+		if !known[id] {
+			http.Error(resp, "There's no nutrient with the ID "+strconv.Quote(id)+".", http.StatusBadRequest)
+			return false
+		}
+	}
+
+	return true
 }
 
 // readFood decodes and validates the food in a request's body. If that fails,
