@@ -63,8 +63,19 @@ can each be reviewed comfortably on their own.
 
 ### M4 – Nutrients
 
-- [ ] Seeded nutrients with targets
-- [ ] Nutrient content on foods
+Each user manages their own list of nutrients, like foods. A nutrient has a
+name, a unit and an optional energy content (kcal per gram). The energy
+content is only used to convert energy-based targets into amounts; a food's
+energy always comes from its own kcal value, so overlapping nutrients (such as
+sugar and carbohydrates) aren't counted twice.
+
+- [ ] Domain types and storage interface (in-memory and Firestore)
+- [ ] CRUD API, with archiving and permanent deletion (which also removes the
+      nutrient's values from foods)
+- [ ] Nutrients page, with an archive view and an "Add the defaults" button
+      (fat, carbohydrates, fibre and protein)
+- [ ] Nutrient content on foods (API and food editor)
+- [ ] Archiving and permanent deletion for foods
 
 ### M5 – Recipes
 
@@ -78,7 +89,11 @@ can each be reviewed comfortably on their own.
 
 ### M7 – Targets
 
-- [ ] Per-nutrient ranges (per day, per 1000 kcal, per kg body weight)
+- [ ] Per-nutrient ranges: up to six optional targets (min/max per day, as a
+      percentage of energy expended, and per kg body weight). The effective
+      range is the highest minimum to the lowest maximum; targets whose inputs
+      are missing for a day are skipped, and conflicting ranges are shown as a
+      warning.
 - [ ] Progress against targets in the UI
 
 ### M8 – Shopping lists
@@ -98,11 +113,9 @@ To be discussed when we reach the relevant milestone:
 
 - Should diary entries be able to reference a single food as well as a recipe?
 - How is a recipe's yield defined (servings, total cooked weight)?
-- Should past diary entries change when a recipe is edited, or keep a
-  snapshot?
+- Should past diary entries change when a recipe or food is edited, or keep a
+  snapshot? (This also decides what permanently deleting a food does to
+  diary entries that use it.)
 - Where does food data come from (manual entry, imports)?
 - Are shopping lists generated from recipes, manual, or both? One list or
   several?
-- How are missing body weight / energy expended values handled?
-- Which nutrients beyond fat, carbohydrates, fibre and protein should be
-  tracked?
