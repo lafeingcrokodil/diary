@@ -65,6 +65,16 @@ export default defineConfig(
 			// 0 and 1 (e.g. in comparisons with a length, or to step through a
 			// list) are clearer as literals than as named constants.
 			'@typescript-eslint/no-magic-numbers': ['error', { ignore: [0, 1] }],
+			// Picking the selector type by how many elements it matches (e.g. an
+			// ID for a single element) makes styles change form whenever the
+			// markup does. Classes and element types are both fine.
+			'svelte/consistent-selector-style': 'off',
+			// These classes are defined in the global stylesheet (src/app.css),
+			// which the rule can't see.
+			'svelte/no-unused-class-name': [
+				'error',
+				{ allowedClassNames: ['button', 'danger', 'muted', 'secondary', 'status'] }
+			],
 			// The rule's defaults, plus an exception for property names that need
 			// quotes (e.g. 'no-undef' as the name of an ESLint rule).
 			'@typescript-eslint/naming-convention': [
