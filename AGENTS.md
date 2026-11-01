@@ -7,6 +7,8 @@
 - Keep `docs/roadmap.md` up to date as milestones progress.
 - Keep PR titles and descriptions up to date: when a PR changes after it's
   opened (e.g. in response to review feedback), update them to match.
+- Don't merge PRs, even once it's agreed that one should be merged: the
+  user merges them.
 
 ## Code comments
 
@@ -28,3 +30,16 @@ using kebab-case. For example:
 Use this convention instead of generated branch names (such as
 `claude/<random-words>`). Pick the name when starting the work, and use a new
 branch for each PR.
+
+## Dependencies
+
+Only use dependency versions that were published at least 14 days ago (Go
+modules, GitHub Actions, npm packages, Terraform providers and container
+images). This is enforced where the tooling supports it: pnpm's
+`minimumReleaseAge` and Dependabot's cooldown.
+
+The one exception is the distroless runtime image in the `Dockerfile`. Its
+images have no publication date, so Dependabot's cooldown can't apply, and its
+tag is republished often enough that the newest digest would rarely be 14 days
+old. Its digest updates can be merged as they come, since the image only
+contains CA certificates, time zone data and user account files.
