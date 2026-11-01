@@ -72,8 +72,7 @@ sugar and carbohydrates) aren't counted twice.
 - [ ] Domain types and storage interface (in-memory and Firestore)
 - [ ] CRUD API, with archiving and permanent deletion (which also removes the
       nutrient's values from foods)
-- [ ] Nutrients page, with an archive view and an "Add the defaults" button
-      (fat, carbohydrates, fibre and protein)
+- [ ] Nutrients page, with an archive view
 - [ ] Nutrient content on foods (API and food editor)
 - [ ] Archiving and permanent deletion for foods
 
@@ -106,6 +105,8 @@ sugar and carbohydrates) aren't counted twice.
 - Installable PWA
 - Labels and search
 - Data export and backups
+- Default nutrients for new users (fat, carbohydrates, fibre and protein, with
+  their kcal per gram)
 
 ## Open questions
 

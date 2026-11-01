@@ -38,7 +38,7 @@ MIN_COVERAGE := 80
 
 # Test helper packages, which only other packages' tests run, so their coverage
 # isn't checked. Keep in sync with the exclusions in .golangci.yml.
-TEST_HELPERS := internal/food/foodtest
+TEST_HELPERS := internal/food/foodtest internal/nutrient/nutrienttest
 
 test: $(FRONTEND)
 	go test -race -coverprofile=coverage.out ./...
