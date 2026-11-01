@@ -1,15 +1,10 @@
-// Package firestoredb stores the app's data in Firestore.
 package firestoredb
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/lafeingcrokodil/diary/internal/food"
 )
@@ -26,6 +21,8 @@ type foodDoc struct {
 	KcalPer100 float64      `firestore:"kcalPer100"`
 	Servings   []servingDoc `firestore:"servings"`
 }
+
+func (d foodDoc) owner() string { return d.Owner }
 
 type servingDoc struct {
 	Name   string  `firestore:"name"`
@@ -92,15 +89,15 @@ func (s *FoodStore) Create(ctx context.Context, owner string, item food.Food) (f
 
 // Get implements food.Store.
 func (s *FoodStore) Get(ctx context.Context, owner, id string) (food.Food, error) {
-	ref := s.doc(id)
+	ref := docRef(s.foods, id)
 	if ref == nil {
 		return food.Food{}, food.ErrNotFound
 	}
 
 	snapshot, err := ref.Get(ctx)
 
-	doc, err := ownedDoc(owner, snapshot, err)
-	if err != nil {
+	var doc foodDoc
+	if err := readOwned(owner, snapshot, err, food.ErrNotFound, &doc); err != nil {
 		return food.Food{}, err
 	}
 
@@ -133,7 +130,7 @@ func (s *FoodStore) List(ctx context.Context, owner string) ([]food.Food, error)
 
 // Update implements food.Store.
 func (s *FoodStore) Update(ctx context.Context, owner string, item food.Food) (food.Food, error) {
-	ref := s.doc(item.ID)
+	ref := docRef(s.foods, item.ID)
 	if ref == nil {
 		return food.Food{}, food.ErrNotFound
 	}
@@ -144,14 +141,14 @@ func (s *FoodStore) Update(ctx context.Context, owner string, item food.Food) (f
 	// food can't change hands in between.
 	err := s.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
 		snapshot, err := tx.Get(ref)
-		if _, err := ownedDoc(owner, snapshot, err); err != nil {
+		if err := readOwned(owner, snapshot, err, food.ErrNotFound, &foodDoc{}); err != nil {
 			return err
 		}
 
 		return tx.Set(ref, doc)
 	})
 	if err != nil {
-		return food.Food{}, wrap("updating food", err)
+		return food.Food{}, wrap("updating food", err, food.ErrNotFound)
 	}
 
 	return fromDoc(item.ID, doc), nil
@@ -159,64 +156,19 @@ func (s *FoodStore) Update(ctx context.Context, owner string, item food.Food) (f
 
 // Delete implements food.Store.
 func (s *FoodStore) Delete(ctx context.Context, owner, id string) error {
-	ref := s.doc(id)
+	ref := docRef(s.foods, id)
 	if ref == nil {
 		return food.ErrNotFound
 	}
 
 	err := s.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
 		snapshot, err := tx.Get(ref)
-		if _, err := ownedDoc(owner, snapshot, err); err != nil {
+		if err := readOwned(owner, snapshot, err, food.ErrNotFound, &foodDoc{}); err != nil {
 			return err
 		}
 
 		return tx.Delete(ref)
 	})
 
-	return wrap("deleting food", err)
-}
-
-// doc returns the document for the food with the given ID, or nil if no food
-// can have that ID: Firestore rejects empty IDs, and a slash would make the ID
-// a path to a different document.
-func (s *FoodStore) doc(id string) *firestore.DocumentRef {
-	if id == "" || strings.Contains(id, "/") {
-		return nil
-	}
-
-	return s.foods.Doc(id)
-}
-
-// ownedDoc decodes a food that was read from Firestore with the given error,
-// and returns food.ErrNotFound if it doesn't exist or belongs to someone other
-// than owner.
-func ownedDoc(owner string, snapshot *firestore.DocumentSnapshot, err error) (foodDoc, error) {
-	if status.Code(err) == codes.NotFound {
-		return foodDoc{}, food.ErrNotFound
-	}
-
-	if err != nil {
-		return foodDoc{}, fmt.Errorf("reading food: %w", err)
-	}
-
-	var doc foodDoc
-	if err := snapshot.DataTo(&doc); err != nil {
-		return foodDoc{}, fmt.Errorf("reading food %s: %w", snapshot.Ref.ID, err)
-	}
-
-	if doc.Owner != owner {
-		return foodDoc{}, food.ErrNotFound
-	}
-
-	return doc, nil
-}
-
-// wrap adds context to err, unless it's nil or food.ErrNotFound, which callers
-// check for as it is.
-func wrap(action string, err error) error {
-	if err == nil || errors.Is(err, food.ErrNotFound) {
-		return err
-	}
-
-	return fmt.Errorf("%s: %w", action, err)
+	return wrap("deleting food", err, food.ErrNotFound)
 }

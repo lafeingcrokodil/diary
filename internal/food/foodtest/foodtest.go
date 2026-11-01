@@ -28,14 +28,16 @@ func Bread() food.Food {
 }
 
 // CheckStore checks that a Store implementation behaves as the interface
-// describes. newStore must return an empty store each time it's called.
-func CheckStore(t *testing.T, newStore func() food.Store) {
+// describes. newStore must return an empty store each time it's called. It
+// gets the test that the store is for, so that it can fail that test if it
+// can't create a store.
+func CheckStore(t *testing.T, newStore func(t *testing.T) food.Store) {
 	t.Helper()
 
 	t.Run("create and get", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		input := Bread()
 		input.ID = "ignored"
@@ -55,7 +57,7 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 	t.Run("IDs are unique", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		first, err := store.Create(t.Context(), alice, Bread())
 		require.NoError(t, err)
@@ -69,14 +71,14 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 	t.Run("get missing food", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := newStore().Get(t.Context(), alice, "missing")
+		_, err := newStore(t).Get(t.Context(), alice, "missing")
 		require.ErrorIs(t, err, food.ErrNotFound)
 	})
 
 	t.Run("unusual IDs don't match any food", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		created, err := store.Create(t.Context(), alice, Bread())
 		require.NoError(t, err)
@@ -97,7 +99,7 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 	t.Run("list sorts by name", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		for _, name := range []string{"rye bread", "Apple", "Butter"} {
 			f := Bread()
@@ -120,7 +122,7 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 	t.Run("list without foods", func(t *testing.T) {
 		t.Parallel()
 
-		foods, err := newStore().List(t.Context(), alice)
+		foods, err := newStore(t).List(t.Context(), alice)
 		require.NoError(t, err)
 		assert.Empty(t, foods)
 	})
@@ -128,7 +130,7 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 	t.Run("update", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		created, err := store.Create(t.Context(), alice, Bread())
 		require.NoError(t, err)
@@ -154,14 +156,14 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 		f := Bread()
 		f.ID = "missing"
 
-		_, err := newStore().Update(t.Context(), alice, f)
+		_, err := newStore(t).Update(t.Context(), alice, f)
 		require.ErrorIs(t, err, food.ErrNotFound)
 	})
 
 	t.Run("delete", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		created, err := store.Create(t.Context(), alice, Bread())
 		require.NoError(t, err)
@@ -177,7 +179,7 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 	t.Run("users can't reach each other's foods", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		alicesFood, err := store.Create(t.Context(), alice, Bread())
 		require.NoError(t, err)
@@ -204,7 +206,7 @@ func CheckStore(t *testing.T, newStore func() food.Store) {
 	t.Run("callers don't share servings with the store", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		input := Bread()
 		created, err := store.Create(t.Context(), alice, input)

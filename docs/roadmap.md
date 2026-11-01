@@ -69,7 +69,7 @@ content is only used to convert energy-based targets into amounts; a food's
 energy always comes from its own kcal value, so overlapping nutrients (such as
 sugar and carbohydrates) aren't counted twice.
 
-- [ ] Domain types and storage interface (in-memory and Firestore)
+- [x] Domain types and storage interface (in-memory and Firestore)
 - [ ] CRUD API, with archiving and permanent deletion (which also removes the
       nutrient's values from foods)
 - [ ] Nutrients page, with an archive view
