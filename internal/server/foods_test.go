@@ -16,6 +16,7 @@ import (
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
 	"github.com/lafeingcrokodil/diary/internal/nutrient/nutrienttest"
+	"github.com/lafeingcrokodil/diary/internal/recipe/recipetest"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
@@ -50,9 +51,13 @@ func newAPI(stores server.Stores) api {
 }
 
 // newFoodsAPI returns an api whose foods are kept in store, and whose
-// nutrients are kept in memory.
+// nutrients and recipes are kept in memory.
 func newFoodsAPI(store food.Store) api {
-	return newAPI(server.Stores{Foods: store, Nutrients: nutrienttest.NewMemoryStore()})
+	return newAPI(server.Stores{
+		Foods:     store,
+		Nutrients: nutrienttest.NewMemoryStore(),
+		Recipes:   recipetest.NewMemoryStore(),
+	})
 }
 
 // do sends a request as user (none if empty) and returns the response.

@@ -9,6 +9,7 @@ import (
 
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/nutrient"
+	"github.com/lafeingcrokodil/diary/internal/recipe"
 )
 
 // foodJSON is how the API represents a food. The owner is left out: it's
@@ -76,9 +77,12 @@ func fromFoodJSON(item foodJSON) food.Food {
 // handleFoods adds the routes for the signed-in user's foods to mux. A food's
 // nutrient amounts must be for the user's own nutrients, which are kept in
 // nutrients. Foods are archived and unarchived by updating them, and only
-// archived foods can be deleted (see food.Store.Delete).
-func handleFoods(mux *http.ServeMux, foods food.Store, nutrients nutrient.Store) {
-	handlers := foodHandlers{foods: foods, nutrients: nutrients}
+// archived foods can be deleted (see food.Store.Delete). So that the amounts
+// in the user's recipes, which are kept in recipes, keep their meaning, foods
+// that recipes use are protected (see recipe.CheckFoodUpdate and
+// recipe.CheckFoodDeletion).
+func handleFoods(mux *http.ServeMux, foods food.Store, nutrients nutrient.Store, recipes recipe.Store) {
+	handlers := foodHandlers{foods: foods, nutrients: nutrients, recipes: recipes}
 	mux.HandleFunc("GET /api/foods", handlers.list)
 	mux.HandleFunc("POST /api/foods", handlers.create)
 	mux.HandleFunc("GET /api/foods/{id}", handlers.get)
@@ -89,6 +93,7 @@ func handleFoods(mux *http.ServeMux, foods food.Store, nutrients nutrient.Store)
 type foodHandlers struct {
 	foods     food.Store
 	nutrients nutrient.Store
+	recipes   recipe.Store
 }
 
 func (h foodHandlers) list(resp http.ResponseWriter, req *http.Request) {
@@ -141,6 +146,18 @@ func (h foodHandlers) update(resp http.ResponseWriter, req *http.Request) {
 	// The path says which food to update, whatever the body says.
 	input.ID = req.PathValue("id")
 
+	old, err := h.foods.Get(req.Context(), owner(req), input.ID)
+	if err != nil {
+		storeError(resp, req, err)
+		return
+	}
+
+	if !h.checkRecipes(resp, req, func(recipes []recipe.Recipe) error {
+		return recipe.CheckFoodUpdate(recipes, old, input)
+	}) {
+		return
+	}
+
 	updated, err := h.foods.Update(req.Context(), owner(req), input)
 	if err != nil {
 		storeError(resp, req, err)
@@ -151,7 +168,15 @@ func (h foodHandlers) update(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (h foodHandlers) delete(resp http.ResponseWriter, req *http.Request) {
-	err := h.foods.Delete(req.Context(), owner(req), req.PathValue("id"))
+	id := req.PathValue("id")
+
+	if !h.checkRecipes(resp, req, func(recipes []recipe.Recipe) error {
+		return recipe.CheckFoodDeletion(recipes, id)
+	}) {
+		return
+	}
+
+	err := h.foods.Delete(req.Context(), owner(req), id)
 	if errors.Is(err, food.ErrNotArchived) {
 		http.Error(resp, "Only archived foods can be deleted.", http.StatusConflict)
 		return
@@ -190,6 +215,26 @@ func (h foodHandlers) checkNutrients(resp http.ResponseWriter, req *http.Request
 			http.Error(resp, "There's no nutrient with the ID "+strconv.Quote(id)+".", http.StatusBadRequest)
 			return false
 		}
+	}
+
+	return true
+}
+
+// checkRecipes calls check with all of the signed-in user's recipes. If check
+// returns an error, it responds with a 409 that gives the error's reason (or a
+// 500 if the recipes can't be listed) and returns false.
+func (h foodHandlers) checkRecipes(
+	resp http.ResponseWriter, req *http.Request, check func([]recipe.Recipe) error,
+) bool {
+	recipes, err := h.recipes.List(req.Context(), owner(req))
+	if err != nil {
+		storeError(resp, req, err)
+		return false
+	}
+
+	if err := check(recipes); err != nil {
+		http.Error(resp, err.Error(), http.StatusConflict)
+		return false
 	}
 
 	return true

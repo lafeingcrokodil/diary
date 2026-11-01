@@ -32,7 +32,7 @@ func New(frontend fs.FS, authenticate func(http.Handler) http.Handler, stores St
 	// known routes with other methods.
 	api := http.NewServeMux()
 	api.HandleFunc("GET /api/me", handleMe)
-	handleFoods(api, stores.Foods, stores.Nutrients)
+	handleFoods(api, stores.Foods, stores.Nutrients, stores.Recipes)
 	handleNutrients(api, stores.Nutrients)
 	handleRecipes(api, stores.Recipes, stores.Foods)
 
