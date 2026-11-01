@@ -58,6 +58,9 @@ linters:
           # Test data, such as a food's energy, reads better as literals. (mnd
           # already skips _test.go files by default.)
           - mnd
+          # The shared store checks are one long list of independent subtests,
+          # which maintidx scores as hard to maintain for their length alone.
+          - maintidx
 
 formatters:
   enable:

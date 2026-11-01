@@ -21,7 +21,8 @@ const bread: FoodInput = {
 	unit: 'g',
 	kcalPer100: 210,
 	servings: [{ name: 'slice', amount: 40 }],
-	nutrients: { protein: 8.5 }
+	nutrients: { protein: 8.5 },
+	archived: false
 };
 
 const storedBread: Food = { id: 'food-1', ...bread };
@@ -76,7 +77,8 @@ describe('listFoods', () => {
 		['an unknown unit', { unit: 'oz' }],
 		['no nutrients', { nutrients: undefined }],
 		["a nutrient amount that isn't a number", { nutrients: { protein: 'lots' } }],
-		['a list of nutrients', { nutrients: [bread.nutrients] }]
+		['a list of nutrients', { nutrients: [bread.nutrients] }],
+		['no archived flag', { archived: undefined }]
 	])('rejects a food with %s', async (_name, change) => {
 		respond([{ ...storedBread, ...change }]);
 

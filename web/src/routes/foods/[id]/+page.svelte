@@ -26,7 +26,16 @@
 		<p class="muted">Loading…</p>
 	{:then [food, nutrients]}
 		<h1>{food.name}</h1>
-		<FoodEditor initial={toForm(food)} {nutrients} ondelete={remove} onsave={save} />
+		{#if food.archived}
+			<p class="muted">This food is archived. Unarchive it to use it again.</p>
+		{/if}
+		<FoodEditor
+			archived={food.archived}
+			initial={toForm(food)}
+			{nutrients}
+			ondelete={remove}
+			onsave={save}
+		/>
 	{:catch error}
 		<p role="alert">Loading the food failed: {String(error)}</p>
 	{/await}

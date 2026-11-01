@@ -10,13 +10,16 @@
 		// All of the user's nutrients. Only active ones get a field, but the
 		// amounts of archived ones are kept.
 		nutrients: Nutrient[];
+		// Whether the food is archived, or undefined for a new food. It decides
+		// which buttons there are.
+		archived?: boolean;
 		// Saves the food. If it throws, the error is shown and the form stays.
 		onsave: (input: FoodInput) => Promise<void>;
-		// Deletes the food, for foods that already exist.
+		// Permanently deletes the food, for archived foods.
 		ondelete?: () => Promise<void>;
 	}
 
-	const { initial, nutrients, onsave, ondelete }: Props = $props();
+	const { initial, nutrients, archived, onsave, ondelete }: Props = $props();
 
 	const active = $derived(nutrients.filter((nutrient) => !nutrient.archived));
 
@@ -40,19 +43,28 @@
 		}
 	};
 
-	const save = async (event: SubmitEvent): Promise<void> => {
-		event.preventDefault();
+	// Saves the form, with the food archived or not. Archiving and unarchiving
+	// save any changes in the form too.
+	const saveAs = async (archive: boolean): Promise<void> => {
 		const parsed = parseForm(form, nutrients);
 		if (!parsed.ok) {
 			({ error } = parsed);
 			return;
 		}
-		await run(async () => onsave(parsed.input));
+		await run(async () => onsave({ ...parsed.input, archived: archive }));
+	};
+
+	const save = async (event: SubmitEvent): Promise<void> => {
+		event.preventDefault();
+		await saveAs(archived ?? false);
 	};
 
 	const remove = async (): Promise<void> => {
-		// eslint-disable-next-line no-alert -- A confirmation dialog is all this needs.
-		if (ondelete !== undefined && confirm(`Delete "${form.name}"?`)) {
+		if (
+			ondelete !== undefined &&
+			// eslint-disable-next-line no-alert -- A confirmation dialog is all this needs.
+			confirm(`Permanently delete "${form.name}"? This can't be undone.`)
+		) {
 			await run(ondelete);
 		}
 	};
@@ -131,8 +143,25 @@
 
 	<div class="actions">
 		<button disabled={busy} type="submit">Save</button>
-		{#if ondelete !== undefined}
-			<button class="danger" disabled={busy} onclick={remove} type="button">Delete</button>
+		{#if archived === false}
+			<button
+				class="secondary"
+				disabled={busy}
+				onclick={async (): Promise<void> => saveAs(true)}
+				type="button">Archive</button
+			>
+		{:else if archived === true}
+			<button
+				class="secondary"
+				disabled={busy}
+				onclick={async (): Promise<void> => saveAs(false)}
+				type="button">Unarchive</button
+			>
+			{#if ondelete !== undefined}
+				<button class="danger" disabled={busy} onclick={remove} type="button"
+					>Delete permanently</button
+				>
+			{/if}
 		{/if}
 	</div>
 </form>
@@ -168,7 +197,7 @@
 
 	.actions {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.75rem;
-		justify-content: space-between;
 	}
 </style>

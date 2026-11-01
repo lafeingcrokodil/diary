@@ -19,6 +19,8 @@ export interface FoodInput {
 	// The amounts of the user's nutrients per 100 of the food's unit, by
 	// nutrient ID. A nutrient without an amount has an unknown amount.
 	nutrients: Record<string, number>;
+	// Archived foods are kept, but are hidden until they're unarchived.
+	archived: boolean;
 }
 
 // A stored food.
@@ -57,7 +59,9 @@ const isFood = (value: unknown): value is Food =>
 	Array.isArray(value.servings) &&
 	value.servings.every(isServing) &&
 	'nutrients' in value &&
-	isAmounts(value.nutrients);
+	isAmounts(value.nutrients) &&
+	'archived' in value &&
+	typeof value.archived === 'boolean';
 
 const readFood = async (response: Response): Promise<Food> => {
 	const value: unknown = await response.json();
@@ -75,7 +79,8 @@ const jsonRequest = (method: string, body: FoodInput): RequestInit => ({
 	body: JSON.stringify(body)
 });
 
-// Returns the signed-in user's foods, sorted by name.
+// Returns all of the signed-in user's foods, including archived ones, sorted
+// by name.
 export const listFoods = async (): Promise<Food[]> => {
 	const response = await apiFetch('/api/foods');
 	const value: unknown = await response.json();
@@ -93,10 +98,12 @@ export const createFood = async (input: FoodInput): Promise<Food> =>
 	readFood(await apiFetch('/api/foods', jsonRequest('POST', input)));
 
 // Replaces one of the signed-in user's foods, and returns it as stored.
+// Archiving and unarchiving a food are updates of its archived field.
 export const updateFood = async (id: string, input: FoodInput): Promise<Food> =>
 	readFood(await apiFetch(foodPath(id), jsonRequest('PUT', input)));
 
-// Deletes one of the signed-in user's foods.
+// Permanently deletes one of the signed-in user's foods. Only archived foods
+// can be deleted.
 export const deleteFood = async (id: string): Promise<void> => {
 	await apiFetch(foodPath(id), { method: 'DELETE' });
 };

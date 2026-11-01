@@ -95,6 +95,10 @@ func (s *MemoryStore) Delete(_ context.Context, owner, id string) error {
 		return food.ErrNotFound
 	}
 
+	if !item.Archived {
+		return food.ErrNotArchived
+	}
+
 	delete(s.foods, id)
 
 	return nil

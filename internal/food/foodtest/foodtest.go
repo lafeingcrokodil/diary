@@ -28,6 +28,13 @@ func Bread() food.Food {
 	}
 }
 
+func archivedBread() food.Food {
+	item := Bread()
+	item.Archived = true
+
+	return item
+}
+
 // CheckStore checks that a Store implementation behaves as the interface
 // describes. newStore must return an empty store each time it's called. It
 // gets the test that the store is for, so that it can fail that test if it
@@ -140,6 +147,7 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) food.Store) {
 		changed.Name = "Wholemeal rye bread"
 		changed.Servings = []food.Serving{{Name: "thin slice", Amount: 25}}
 		changed.Nutrients = map[string]float64{"protein": 9}
+		changed.Archived = true
 		changed.Owner = bob
 
 		updated, err := store.Update(t.Context(), alice, changed)
@@ -167,7 +175,7 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) food.Store) {
 
 		store := newStore(t)
 
-		created, err := store.Create(t.Context(), alice, Bread())
+		created, err := store.Create(t.Context(), alice, archivedBread())
 		require.NoError(t, err)
 
 		require.NoError(t, store.Delete(t.Context(), alice, created.ID))
@@ -178,12 +186,28 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) food.Store) {
 		require.ErrorIs(t, store.Delete(t.Context(), alice, created.ID), food.ErrNotFound)
 	})
 
+	t.Run("delete a food that isn't archived", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore(t)
+
+		created, err := store.Create(t.Context(), alice, Bread())
+		require.NoError(t, err)
+
+		require.ErrorIs(t, store.Delete(t.Context(), alice, created.ID), food.ErrNotArchived)
+
+		got, err := store.Get(t.Context(), alice, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created, got)
+	})
+
 	t.Run("users can't reach each other's foods", func(t *testing.T) {
 		t.Parallel()
 
 		store := newStore(t)
 
-		alicesFood, err := store.Create(t.Context(), alice, Bread())
+		// Archived, so that only the owner check stops Bob from deleting it.
+		alicesFood, err := store.Create(t.Context(), alice, archivedBread())
 		require.NoError(t, err)
 
 		_, err = store.Get(t.Context(), bob, alicesFood.ID)

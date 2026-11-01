@@ -42,6 +42,8 @@ type Food struct {
 	// per 100 of the food's unit, in the nutrient's own unit. Nutrients that
 	// aren't in the map have an unknown amount, rather than none.
 	Nutrients map[string]float64
+	// Archived foods are kept, but are hidden until they're unarchived.
+	Archived bool
 }
 
 // ErrInvalid is wrapped by the errors that Validate returns.
