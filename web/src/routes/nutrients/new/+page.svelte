@@ -2,11 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import NutrientEditor from '#lib/NutrientEditor.svelte';
-	import { type NutrientFields, emptyForm } from '#lib/nutrient-form.ts';
-	import { createNutrient } from '#lib/nutrients.ts';
+	import { emptyForm } from '#lib/nutrient-form.ts';
+	import { type NutrientInput, createNutrient } from '#lib/nutrients.ts';
 
-	const save = async (input: NutrientFields): Promise<void> => {
-		await createNutrient({ ...input, archived: false });
+	const save = async (input: NutrientInput): Promise<void> => {
+		await createNutrient(input);
 		await goto(resolve('/nutrients'));
 	};
 </script>

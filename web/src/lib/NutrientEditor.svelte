@@ -1,22 +1,20 @@
 <script lang="ts">
-	import { type NutrientFields, type NutrientForm, parseForm } from '#lib/nutrient-form.ts';
-	import { units } from '#lib/nutrients.ts';
+	import { type NutrientForm, parseForm } from '#lib/nutrient-form.ts';
+	import { type NutrientInput, units } from '#lib/nutrients.ts';
 
 	interface Props {
 		// The values to start with.
 		initial: NutrientForm;
-		// Saves the nutrient's fields. If it throws, the error is shown and the
-		// form stays.
-		onsave: (input: NutrientFields) => Promise<void>;
-		// Archives the nutrient, for nutrients that exist and aren't archived.
-		onarchive?: () => Promise<void>;
-		// Unarchives the nutrient, for archived nutrients.
-		onunarchive?: () => Promise<void>;
+		// Whether the nutrient is archived, or undefined for a new nutrient. It
+		// decides which buttons there are.
+		archived?: boolean;
+		// Saves the nutrient. If it throws, the error is shown and the form stays.
+		onsave: (input: NutrientInput) => Promise<void>;
 		// Permanently deletes the nutrient, for archived nutrients.
 		ondelete?: () => Promise<void>;
 	}
 
-	const { initial, onsave, onarchive, onunarchive, ondelete }: Props = $props();
+	const { initial, archived, onsave, ondelete }: Props = $props();
 
 	// The form starts with the initial values, and then belongs to the user.
 	// svelte-ignore state_referenced_locally
@@ -38,14 +36,20 @@
 		}
 	};
 
-	const save = async (event: SubmitEvent): Promise<void> => {
-		event.preventDefault();
+	// Saves the form, with the nutrient archived or not. Archiving and
+	// unarchiving save any changes in the form too.
+	const saveAs = async (archive: boolean): Promise<void> => {
 		const parsed = parseForm(form);
 		if (!parsed.ok) {
 			({ error } = parsed);
 			return;
 		}
-		await run(async () => onsave(parsed.input));
+		await run(async () => onsave({ ...parsed.input, archived: archive }));
+	};
+
+	const save = async (event: SubmitEvent): Promise<void> => {
+		event.preventDefault();
+		await saveAs(archived ?? false);
 	};
 
 	const remove = async (): Promise<void> => {
@@ -83,26 +87,25 @@
 
 	<div class="actions">
 		<button disabled={busy} type="submit">Save</button>
-		{#if onarchive !== undefined}
+		{#if archived === false}
 			<button
 				class="secondary"
 				disabled={busy}
-				onclick={async (): Promise<void> => run(onarchive)}
+				onclick={async (): Promise<void> => saveAs(true)}
 				type="button">Archive</button
 			>
-		{/if}
-		{#if onunarchive !== undefined}
+		{:else if archived === true}
 			<button
 				class="secondary"
 				disabled={busy}
-				onclick={async (): Promise<void> => run(onunarchive)}
+				onclick={async (): Promise<void> => saveAs(false)}
 				type="button">Unarchive</button
 			>
-		{/if}
-		{#if ondelete !== undefined}
-			<button class="danger" disabled={busy} onclick={remove} type="button"
-				>Delete permanently</button
-			>
+			{#if ondelete !== undefined}
+				<button class="danger" disabled={busy} onclick={remove} type="button"
+					>Delete permanently</button
+				>
+			{/if}
 		{/if}
 	</div>
 </form>
