@@ -97,7 +97,7 @@ or removed.
 - [x] CRUD API, with archiving and permanent deletion
 - [x] Computed nutrition (domain function and API)
 - [x] Protecting foods that recipes use (deletion, unit changes, servings)
-- [ ] Recipe list and editor UI
+- [x] Recipe list and editor UI
 - [ ] Nutrition in the recipe UI
 
 ### M6 – Diary

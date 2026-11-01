@@ -114,7 +114,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
 	width: 100%;
 	min-height: var(--tap);
 	padding: 0 0.75rem;
@@ -123,6 +124,12 @@ select {
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
+}
+
+/* Text areas grow downwards as the user needs, with room around the lines. */
+textarea {
+	padding: 0.5rem 0.75rem;
+	resize: vertical;
 }
 
 fieldset {
