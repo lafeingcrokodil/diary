@@ -10,20 +10,28 @@ import (
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
 	"github.com/lafeingcrokodil/diary/internal/food"
+	"github.com/lafeingcrokodil/diary/internal/nutrient"
 )
+
+// Stores holds the stores that keep the app's data.
+type Stores struct {
+	Foods     food.Store
+	Nutrients nutrient.Store
+}
 
 // New returns an http.Handler that serves all of the app's routes, plus the
 // front end from the given files, which must include an index.html.
 //
 // Every request under /api/ goes through authenticate, which must only pass on
 // requests from allowed users, with the user in the context (see
-// auth.WithUser). Foods are kept in foods.
-func New(frontend fs.FS, authenticate func(http.Handler) http.Handler, foods food.Store) http.Handler {
+// auth.WithUser). The app's data is kept in stores.
+func New(frontend fs.FS, authenticate func(http.Handler) http.Handler, stores Stores) http.Handler {
 	// The API's own mux responds with a 404 to unknown routes, and a 405 to
 	// known routes with other methods.
 	api := http.NewServeMux()
 	api.HandleFunc("GET /api/me", handleMe)
-	handleFoods(api, foods)
+	handleFoods(api, stores.Foods)
+	handleNutrients(api, stores.Nutrients)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", handleHealth)

@@ -1,18 +1,10 @@
 package server
 
 import (
-	"encoding/json"
-	"errors"
-	"log/slog"
 	"net/http"
 
-	"github.com/lafeingcrokodil/diary/internal/auth"
 	"github.com/lafeingcrokodil/diary/internal/food"
 )
-
-// maxBodyBytes limits the size of request bodies, which are small JSON
-// documents.
-const maxBodyBytes = 1 << 20
 
 // foodJSON is how the API represents a food. The owner is left out: it's
 // always the signed-in user.
@@ -30,7 +22,7 @@ type servingJSON struct {
 	Amount float64 `json:"amount"`
 }
 
-func toJSON(item food.Food) foodJSON {
+func toFoodJSON(item food.Food) foodJSON {
 	servings := make([]servingJSON, 0, len(item.Servings))
 	for _, serving := range item.Servings {
 		servings = append(servings, servingJSON(serving))
@@ -46,7 +38,7 @@ func toJSON(item food.Food) foodJSON {
 	}
 }
 
-func fromJSON(item foodJSON) food.Food {
+func fromFoodJSON(item foodJSON) food.Food {
 	servings := make([]food.Serving, 0, len(item.Servings))
 	for _, serving := range item.Servings {
 		servings = append(servings, food.Serving(serving))
@@ -85,7 +77,7 @@ func (h foodHandlers) list(resp http.ResponseWriter, req *http.Request) {
 
 	result := make([]foodJSON, 0, len(list))
 	for _, item := range list {
-		result = append(result, toJSON(item))
+		result = append(result, toFoodJSON(item))
 	}
 
 	writeJSON(resp, req, http.StatusOK, result)
@@ -104,7 +96,7 @@ func (h foodHandlers) create(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	resp.Header().Set("Location", "/api/foods/"+created.ID)
-	writeJSON(resp, req, http.StatusCreated, toJSON(created))
+	writeJSON(resp, req, http.StatusCreated, toFoodJSON(created))
 }
 
 func (h foodHandlers) get(resp http.ResponseWriter, req *http.Request) {
@@ -114,7 +106,7 @@ func (h foodHandlers) get(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeJSON(resp, req, http.StatusOK, toJSON(got))
+	writeJSON(resp, req, http.StatusOK, toFoodJSON(got))
 }
 
 func (h foodHandlers) update(resp http.ResponseWriter, req *http.Request) {
@@ -132,7 +124,7 @@ func (h foodHandlers) update(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeJSON(resp, req, http.StatusOK, toJSON(updated))
+	writeJSON(resp, req, http.StatusOK, toFoodJSON(updated))
 }
 
 func (h foodHandlers) delete(resp http.ResponseWriter, req *http.Request) {
@@ -144,53 +136,19 @@ func (h foodHandlers) delete(resp http.ResponseWriter, req *http.Request) {
 	resp.WriteHeader(http.StatusNoContent)
 }
 
-// owner returns the ID of the signed-in user, whose foods a request is about.
-// The auth middleware guarantees that there's a user.
-func owner(req *http.Request) string {
-	user, _ := auth.UserFrom(req.Context())
-
-	return user.ID
-}
-
 // readFood decodes and validates the food in a request's body. If that fails,
 // it responds with a 400 and returns false.
 func readFood(resp http.ResponseWriter, req *http.Request) (food.Food, bool) {
-	decoder := json.NewDecoder(http.MaxBytesReader(resp, req.Body, maxBodyBytes))
-	decoder.DisallowUnknownFields()
-
 	var input foodJSON
-	if err := decoder.Decode(&input); err != nil {
-		http.Error(resp, "The request body isn't a valid food: "+err.Error(), http.StatusBadRequest)
+	if !decodeBody(resp, req, &input, "food") {
 		return food.Food{}, false
 	}
 
-	parsed := fromJSON(input)
+	parsed := fromFoodJSON(input)
 	if err := parsed.Validate(); err != nil {
 		http.Error(resp, err.Error(), http.StatusBadRequest)
 		return food.Food{}, false
 	}
 
 	return parsed, true
-}
-
-// storeError responds to an error from the food store: a 404 if the food
-// doesn't exist (or belongs to someone else), and a 500 otherwise.
-func storeError(resp http.ResponseWriter, req *http.Request, err error) {
-	if errors.Is(err, food.ErrNotFound) {
-		http.NotFound(resp, req)
-		return
-	}
-
-	slog.ErrorContext(req.Context(), "accessing foods", "err", err)
-	http.Error(resp, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-}
-
-// writeJSON responds with value encoded as JSON.
-func writeJSON(resp http.ResponseWriter, req *http.Request, status int, value any) {
-	resp.Header().Set("Content-Type", "application/json")
-	resp.WriteHeader(status)
-
-	if err := json.NewEncoder(resp).Encode(value); err != nil {
-		slog.ErrorContext(req.Context(), "writing response", "err", err)
-	}
 }

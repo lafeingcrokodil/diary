@@ -12,6 +12,9 @@ import (
 // user.
 var ErrNotFound = errors.New("nutrient not found")
 
+// ErrNotArchived is returned when deleting a nutrient that isn't archived.
+var ErrNotArchived = errors.New("nutrient not archived")
+
 // Store keeps users' nutrients. Every method only acts on the given owner's
 // nutrients, so that users can't see or change each other's nutrients.
 type Store interface {
@@ -27,7 +30,9 @@ type Store interface {
 	// It returns ErrNotFound if owner has no such nutrient. The owner can't be
 	// changed: any owner set on nutrient is ignored.
 	Update(ctx context.Context, owner string, nutrient Nutrient) (Nutrient, error)
-	// Delete removes one of owner's nutrients, or returns ErrNotFound.
+	// Delete removes one of owner's nutrients. It returns ErrNotFound if owner
+	// has no such nutrient, and ErrNotArchived if the nutrient isn't archived,
+	// so that deleting one is always a second step after archiving it.
 	Delete(ctx context.Context, owner, id string) error
 }
 

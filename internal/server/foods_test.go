@@ -37,13 +37,18 @@ type foodJSON struct {
 	} `json:"servings"`
 }
 
-// api sends requests to a server whose foods are kept in store.
+// api sends requests to a server whose data is kept in stores.
 type api struct {
 	handler http.Handler
 }
 
-func newAPI(store food.Store) api {
-	return api{handler: server.New(fstest.MapFS{"index.html": {Data: []byte(indexHTML)}}, fakeAuth, store)}
+func newAPI(stores server.Stores) api {
+	return api{handler: server.New(fstest.MapFS{"index.html": {Data: []byte(indexHTML)}}, fakeAuth, stores)}
+}
+
+// newFoodsAPI returns an api whose foods are kept in store.
+func newFoodsAPI(store food.Store) api {
+	return newAPI(server.Stores{Foods: store})
 }
 
 // do sends a request as user (none if empty) and returns the response.
@@ -94,7 +99,7 @@ func TestFoods(t *testing.T) {
 	t.Run("create, get and list", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(foodtest.NewMemoryStore())
+		foods := newFoodsAPI(foodtest.NewMemoryStore())
 
 		rec := foods.do(t, http.MethodPost, "/api/foods", alice, bread)
 		require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
@@ -119,7 +124,7 @@ func TestFoods(t *testing.T) {
 	t.Run("list without foods", func(t *testing.T) {
 		t.Parallel()
 
-		rec := newAPI(foodtest.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", alice, "")
+		rec := newFoodsAPI(foodtest.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", alice, "")
 		require.Equal(t, http.StatusOK, rec.Code)
 		assert.JSONEq(t, "[]", rec.Body.String())
 	})
@@ -127,7 +132,7 @@ func TestFoods(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(foodtest.NewMemoryStore())
+		foods := newFoodsAPI(foodtest.NewMemoryStore())
 		created := foods.createBread(t)
 
 		// The ID in the body is ignored in favour of the one in the path.
@@ -148,7 +153,7 @@ func TestFoods(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(foodtest.NewMemoryStore())
+		foods := newFoodsAPI(foodtest.NewMemoryStore())
 		created := foods.createBread(t)
 
 		rec := foods.do(t, http.MethodDelete, "/api/foods/"+created.ID, alice, "")
@@ -161,7 +166,7 @@ func TestFoods(t *testing.T) {
 	t.Run("missing food", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(foodtest.NewMemoryStore())
+		foods := newFoodsAPI(foodtest.NewMemoryStore())
 
 		assert.Equal(t, http.StatusNotFound, foods.do(t, http.MethodGet, "/api/foods/missing", alice, "").Code)
 		assert.Equal(t, http.StatusNotFound, foods.do(t, http.MethodPut, "/api/foods/missing", alice, bread).Code)
@@ -171,7 +176,7 @@ func TestFoods(t *testing.T) {
 	t.Run("users can't reach each other's foods", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(foodtest.NewMemoryStore())
+		foods := newFoodsAPI(foodtest.NewMemoryStore())
 		alicesFood := foods.createBread(t)
 		path := "/api/foods/" + alicesFood.ID
 
@@ -189,7 +194,7 @@ func TestFoods(t *testing.T) {
 	t.Run("not signed in", func(t *testing.T) {
 		t.Parallel()
 
-		rec := newAPI(foodtest.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", "", "")
+		rec := newFoodsAPI(foodtest.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", "", "")
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	})
 }
@@ -208,7 +213,7 @@ func TestFoodsInvalidInput(t *testing.T) {
 		{"too large", `{"name":"` + strings.Repeat("a", 1<<20) + `","unit":"g"}`},
 	}
 
-	foods := newAPI(foodtest.NewMemoryStore())
+	foods := newFoodsAPI(foodtest.NewMemoryStore())
 	created := foods.createBread(t)
 
 	for _, test := range tests {
@@ -224,21 +229,21 @@ func TestFoodsInvalidInput(t *testing.T) {
 	}
 }
 
-// failingStore is a food.Store whose every method fails.
-type failingStore struct {
+// failingFoodStore is a food.Store whose List fails.
+type failingFoodStore struct {
 	food.Store
 }
 
 var errStore = errors.New("store unavailable")
 
-func (failingStore) List(_ context.Context, _ string) ([]food.Food, error) {
+func (failingFoodStore) List(_ context.Context, _ string) ([]food.Food, error) {
 	return nil, errStore
 }
 
 func TestFoodsStoreError(t *testing.T) {
 	t.Parallel()
 
-	rec := newAPI(failingStore{}).do(t, http.MethodGet, "/api/foods", alice, "")
+	rec := newFoodsAPI(failingFoodStore{}).do(t, http.MethodGet, "/api/foods", alice, "")
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	assert.NotContains(t, rec.Body.String(), errStore.Error())
 }

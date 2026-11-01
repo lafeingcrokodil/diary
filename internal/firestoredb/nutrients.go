@@ -145,10 +145,18 @@ func (s *NutrientStore) Delete(ctx context.Context, owner, id string) error {
 		return nutrient.ErrNotFound
 	}
 
+	// Checking that the nutrient is archived and deleting it happen in one
+	// transaction, so that it can't be unarchived in between.
 	err := s.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
 		snapshot, err := tx.Get(ref)
-		if err := readOwned(owner, snapshot, err, nutrient.ErrNotFound, &nutrientDoc{}); err != nil {
+
+		var doc nutrientDoc
+		if err := readOwned(owner, snapshot, err, nutrient.ErrNotFound, &doc); err != nil {
 			return err
+		}
+
+		if !doc.Archived {
+			return nutrient.ErrNotArchived
 		}
 
 		return tx.Delete(ref)

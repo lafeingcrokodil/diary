@@ -70,10 +70,10 @@ energy always comes from its own kcal value, so overlapping nutrients (such as
 sugar and carbohydrates) aren't counted twice.
 
 - [x] Domain types and storage interface (in-memory and Firestore)
-- [ ] CRUD API, with archiving and permanent deletion (which also removes the
-      nutrient's values from foods)
+- [x] CRUD API, with archiving and permanent deletion
 - [ ] Nutrients page, with an archive view
-- [ ] Nutrient content on foods (API and food editor)
+- [ ] Nutrient content on foods (API and food editor), with deleting a
+      nutrient also removing its values from foods
 - [ ] Archiving and permanent deletion for foods
 
 ### M5 – Recipes
