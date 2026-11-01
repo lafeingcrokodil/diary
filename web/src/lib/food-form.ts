@@ -1,5 +1,6 @@
 import type { FoodInput, Serving, Unit } from '#lib/foods.ts';
 import type { Nutrient } from '#lib/nutrients.ts';
+import { readNumber } from '#lib/numbers.ts';
 
 // The values of a food's form fields, as the user typed them.
 export interface FoodForm {
@@ -43,16 +44,6 @@ export const toForm = (input: FoodFields): FoodForm => ({
 		Object.entries(input.nutrients).map(([id, amount]) => [id, String(amount)])
 	)
 });
-
-// Reads a number field, or returns undefined if it isn't a finite number.
-const readNumber = (text: string): number | undefined => {
-	const trimmed = text.trim();
-	if (trimmed === '') {
-		return undefined;
-	}
-	const value = Number(trimmed.replace(',', '.'));
-	return Number.isFinite(value) ? value : undefined;
-};
 
 // Reads one serving row: undefined if it was left empty, or an error message
 // if it's invalid.
