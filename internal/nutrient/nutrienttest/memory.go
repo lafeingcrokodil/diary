@@ -6,6 +6,7 @@ import (
 	"maps"
 	"sync"
 
+	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
 	"github.com/lafeingcrokodil/diary/internal/nutrient"
 )
 
@@ -15,11 +16,21 @@ import (
 type MemoryStore struct {
 	mu        sync.Mutex
 	nutrients map[string]nutrient.Nutrient
+	// foods, if not nil, holds the foods whose amounts of a nutrient are
+	// removed when the nutrient is deleted.
+	foods *foodtest.MemoryStore
 }
 
-// NewMemoryStore returns an empty MemoryStore.
+// NewMemoryStore returns an empty MemoryStore, for tests that don't involve
+// foods.
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{nutrients: map[string]nutrient.Nutrient{}}
+}
+
+// NewMemoryStoreWithFoods returns an empty MemoryStore whose nutrients' amounts
+// are kept in foods.
+func NewMemoryStoreWithFoods(foods *foodtest.MemoryStore) *MemoryStore {
+	return &MemoryStore{nutrients: map[string]nutrient.Nutrient{}, foods: foods}
 }
 
 var _ nutrient.Store = (*MemoryStore)(nil)
@@ -95,6 +106,12 @@ func (s *MemoryStore) Delete(_ context.Context, owner, id string) error {
 
 	if !item.Archived {
 		return nutrient.ErrNotArchived
+	}
+
+	// The nutrient stays locked while its amounts are removed, so that it
+	// can't be unarchived in between.
+	if s.foods != nil {
+		s.foods.RemoveNutrient(owner, id)
 	}
 
 	delete(s.nutrients, id)

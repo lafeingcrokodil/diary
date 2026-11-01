@@ -50,11 +50,18 @@ func fromNutrientDoc(id string, doc nutrientDoc) nutrient.Nutrient {
 type NutrientStore struct {
 	client    *firestore.Client
 	nutrients *firestore.CollectionRef
+	// foods holds the foods whose amounts of a nutrient are removed when the
+	// nutrient is deleted.
+	foods *firestore.CollectionRef
 }
 
 // NewNutrientStore returns a NutrientStore that uses client.
 func NewNutrientStore(client *firestore.Client) *NutrientStore {
-	return &NutrientStore{client: client, nutrients: client.Collection(nutrientsCollection)}
+	return &NutrientStore{
+		client:    client,
+		nutrients: client.Collection(nutrientsCollection),
+		foods:     client.Collection(foodsCollection),
+	}
 }
 
 var _ nutrient.Store = (*NutrientStore)(nil)
@@ -145,8 +152,9 @@ func (s *NutrientStore) Delete(ctx context.Context, owner, id string) error {
 		return nutrient.ErrNotFound
 	}
 
-	// Checking that the nutrient is archived and deleting it happen in one
-	// transaction, so that it can't be unarchived in between.
+	// Checking that the nutrient is archived, removing its amounts from foods
+	// and deleting it happen in one transaction, so that the nutrient can't be
+	// unarchived, and no amounts can be added, in between.
 	err := s.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
 		snapshot, err := tx.Get(ref)
 
@@ -159,8 +167,48 @@ func (s *NutrientStore) Delete(ctx context.Context, owner, id string) error {
 			return nutrient.ErrNotArchived
 		}
 
+		// A transaction must do all its reads before its writes.
+		foods, err := s.foodsWithNutrient(tx, owner, id)
+		if err != nil {
+			return err
+		}
+
+		for _, food := range foods {
+			update := firestore.Update{FieldPath: firestore.FieldPath{"nutrients", id}, Value: firestore.Delete}
+			if err := tx.Update(food, []firestore.Update{update}); err != nil {
+				return fmt.Errorf("removing nutrient from food %s: %w", food.ID, err)
+			}
+		}
+
 		return tx.Delete(ref)
 	})
 
 	return wrap("deleting nutrient", err, nutrient.ErrNotFound)
+}
+
+// foodsWithNutrient returns owner's foods that have an amount of the nutrient
+// with the given ID. Firestore can't query for foods that have a field without
+// an index for that field, so it reads all of owner's foods and checks each.
+func (s *NutrientStore) foodsWithNutrient(
+	tx *firestore.Transaction, owner, id string,
+) ([]*firestore.DocumentRef, error) {
+	snapshots, err := tx.Documents(s.foods.Where("owner", "==", owner)).GetAll()
+	if err != nil {
+		return nil, fmt.Errorf("listing foods: %w", err)
+	}
+
+	var refs []*firestore.DocumentRef
+
+	for _, snapshot := range snapshots {
+		var doc foodDoc
+		if err := snapshot.DataTo(&doc); err != nil {
+			return nil, fmt.Errorf("reading food %s: %w", snapshot.Ref.ID, err)
+		}
+
+		if _, ok := doc.Nutrients[id]; ok {
+			refs = append(refs, snapshot.Ref)
+		}
+	}
+
+	return refs, nil
 }
