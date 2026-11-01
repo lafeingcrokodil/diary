@@ -15,6 +15,7 @@ pnpm install   # install dependencies
 pnpm dev       # start a dev server on http://localhost:5173 (see below)
 pnpm check     # type-check
 pnpm lint      # check formatting (Prettier) and lint (ESLint)
+pnpm test      # run the tests (Vitest)
 pnpm format    # fix formatting
 pnpm build     # build the app into build/
 ```
