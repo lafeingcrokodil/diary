@@ -45,7 +45,7 @@ linters:
         linters:
           - funlen
           - goconst
-      - path: ^internal/food/foodtest/
+      - path: ^internal/(food/foodtest|nutrient/nutrienttest)/
         linters:
           - funlen
           - goconst
