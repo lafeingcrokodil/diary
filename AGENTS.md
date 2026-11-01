@@ -7,6 +7,8 @@
 - Keep `docs/roadmap.md` up to date as milestones progress.
 - Keep PR titles and descriptions up to date: when a PR changes after it's
   opened (e.g. in response to review feedback), update them to match.
+- Don't merge PRs, even once it's agreed that one should be merged: the
+  user merges them.
 
 ## Code comments
 
