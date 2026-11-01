@@ -9,7 +9,10 @@ FRONTEND := web/build/index.html
 # server also requires ALLOWED_EMAILS, which has no default.
 export FIREBASE_PROJECT_ID ?= lafeingcrokodil-diary
 
-# Builds the front end and runs the server on http://localhost:8080.
+# Builds the front end and runs the server on http://localhost:8080. Unless
+# FIRESTORE_EMULATOR_HOST is set otherwise, the server uses the emulator that
+# `make emulator` runs, so that local runs don't touch the real database.
+run: export FIRESTORE_EMULATOR_HOST ?= localhost:8085
 run: web
 	go run ./cmd/diary
 
