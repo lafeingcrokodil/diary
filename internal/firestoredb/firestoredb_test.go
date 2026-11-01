@@ -65,6 +65,21 @@ func TestNutrientStore(t *testing.T) {
 	})
 }
 
+func TestNutrientStoreDeleteRemovesAmounts(t *testing.T) {
+	t.Parallel()
+
+	nutrienttest.CheckDeleteRemovesAmounts(t, func(t *testing.T) nutrienttest.Stores {
+		t.Helper()
+
+		client := newClient(t)
+
+		return nutrienttest.Stores{
+			Foods:     firestoredb.NewFoodStore(client),
+			Nutrients: firestoredb.NewNutrientStore(client),
+		}
+	})
+}
+
 // requireEmulator fails the test unless the Firestore emulator at host responds
 // within a few seconds.
 func requireEmulator(t *testing.T, host string) {

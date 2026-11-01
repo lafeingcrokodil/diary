@@ -100,6 +100,20 @@ func (s *MemoryStore) Delete(_ context.Context, owner, id string) error {
 	return nil
 }
 
+// RemoveNutrient removes the amounts of the nutrient with the given ID from
+// owner's foods.
+func (s *MemoryStore) RemoveNutrient(owner, nutrientID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for id, item := range s.foods {
+		if item.Owner == owner {
+			delete(item.Nutrients, nutrientID)
+			s.foods[id] = item
+		}
+	}
+}
+
 // clone copies item's servings and nutrients, so that the store and its
 // callers don't share them.
 func clone(item food.Food) food.Food {

@@ -30,9 +30,10 @@ type Store interface {
 	// It returns ErrNotFound if owner has no such nutrient. The owner can't be
 	// changed: any owner set on nutrient is ignored.
 	Update(ctx context.Context, owner string, nutrient Nutrient) (Nutrient, error)
-	// Delete removes one of owner's nutrients. It returns ErrNotFound if owner
-	// has no such nutrient, and ErrNotArchived if the nutrient isn't archived,
-	// so that deleting one is always a second step after archiving it.
+	// Delete removes one of owner's nutrients, along with its amounts in
+	// owner's foods, all at once. It returns ErrNotFound if owner has no such
+	// nutrient, and ErrNotArchived if the nutrient isn't archived, so that
+	// deleting one is always a second step after archiving it.
 	Delete(ctx context.Context, owner, id string) error
 }
 
