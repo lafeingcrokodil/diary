@@ -41,7 +41,7 @@ export interface Nutrition {
 	kcal: Total;
 	// Totals by nutrient ID, in each nutrient's unit, for the nutrients whose
 	// amount is known for at least one ingredient.
-	nutrients: Record<string, Total>;
+	nutrients: Partial<Record<string, Total>>;
 }
 
 // A stored recipe, with its nutrition.

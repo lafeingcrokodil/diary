@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { formatTotal } from '#lib/recipe-nutrition.ts';
 	import type { Recipe } from '#lib/recipes.ts';
 
 	interface Props {
@@ -8,10 +9,15 @@
 
 	const { recipes }: Props = $props();
 
-	const describe = (recipe: Recipe): string =>
-		recipe.ingredients.length === 1
-			? '1 ingredient'
-			: `${String(recipe.ingredients.length)} ingredients`;
+	// Describes a recipe's size and energy, e.g. "3 ingredients · 1,058 kcal".
+	const describe = (recipe: Recipe): string => {
+		const count = recipe.ingredients.length;
+		if (count === 0) {
+			return 'No ingredients yet';
+		}
+		const ingredients = count === 1 ? '1 ingredient' : `${String(count)} ingredients`;
+		return `${ingredients} · ${formatTotal(recipe.nutrition.kcal, 'kcal')}`;
+	};
 </script>
 
 <ul>
