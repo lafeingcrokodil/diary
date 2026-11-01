@@ -60,6 +60,7 @@ func main() {
 	stores := server.Stores{
 		Foods:     firestoredb.NewFoodStore(firestoreClient),
 		Nutrients: firestoredb.NewNutrientStore(firestoreClient),
+		Recipes:   firestoredb.NewRecipeStore(firestoreClient),
 	}
 
 	srv := &http.Server{
