@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
 	import favicon from '#lib/assets/favicon.svg';
 	import { ApiError, getMe } from '#lib/api.ts';
 	import { initAuth, session, signIn, signOut } from '#lib/auth.svelte.ts';
@@ -54,6 +55,7 @@
 	</main>
 {:else}
 	<header>
+		<a href={resolve('/')}>Diary</a>
 		<span>{session.user.email}</span>
 		<button onclick={signOut} type="button">Sign out</button>
 	</header>
