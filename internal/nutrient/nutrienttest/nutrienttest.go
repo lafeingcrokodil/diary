@@ -26,14 +26,16 @@ func Protein() nutrient.Nutrient {
 }
 
 // CheckStore checks that a Store implementation behaves as the interface
-// describes. newStore must return an empty store each time it's called.
-func CheckStore(t *testing.T, newStore func() nutrient.Store) {
+// describes. newStore must return an empty store each time it's called. It
+// gets the test that the store is for, so that it can fail that test if it
+// can't create a store.
+func CheckStore(t *testing.T, newStore func(t *testing.T) nutrient.Store) {
 	t.Helper()
 
 	t.Run("create and get", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		input := Protein()
 		input.ID = "ignored"
@@ -53,7 +55,7 @@ func CheckStore(t *testing.T, newStore func() nutrient.Store) {
 	t.Run("IDs are unique", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		first, err := store.Create(t.Context(), alice, Protein())
 		require.NoError(t, err)
@@ -67,14 +69,14 @@ func CheckStore(t *testing.T, newStore func() nutrient.Store) {
 	t.Run("get missing nutrient", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := newStore().Get(t.Context(), alice, "missing")
+		_, err := newStore(t).Get(t.Context(), alice, "missing")
 		require.ErrorIs(t, err, nutrient.ErrNotFound)
 	})
 
 	t.Run("unusual IDs don't match any nutrient", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		created, err := store.Create(t.Context(), alice, Protein())
 		require.NoError(t, err)
@@ -95,7 +97,7 @@ func CheckStore(t *testing.T, newStore func() nutrient.Store) {
 	t.Run("list sorts by name and includes archived nutrients", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		for _, name := range []string{"protein", "Carbohydrates", "Fibre"} {
 			n := Protein()
@@ -119,7 +121,7 @@ func CheckStore(t *testing.T, newStore func() nutrient.Store) {
 	t.Run("list without nutrients", func(t *testing.T) {
 		t.Parallel()
 
-		nutrients, err := newStore().List(t.Context(), alice)
+		nutrients, err := newStore(t).List(t.Context(), alice)
 		require.NoError(t, err)
 		assert.Empty(t, nutrients)
 	})
@@ -127,7 +129,7 @@ func CheckStore(t *testing.T, newStore func() nutrient.Store) {
 	t.Run("update", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		created, err := store.Create(t.Context(), alice, Protein())
 		require.NoError(t, err)
@@ -156,14 +158,14 @@ func CheckStore(t *testing.T, newStore func() nutrient.Store) {
 		n := Protein()
 		n.ID = "missing"
 
-		_, err := newStore().Update(t.Context(), alice, n)
+		_, err := newStore(t).Update(t.Context(), alice, n)
 		require.ErrorIs(t, err, nutrient.ErrNotFound)
 	})
 
 	t.Run("delete", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		created, err := store.Create(t.Context(), alice, Protein())
 		require.NoError(t, err)
@@ -179,7 +181,7 @@ func CheckStore(t *testing.T, newStore func() nutrient.Store) {
 	t.Run("users can't reach each other's nutrients", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := newStore(t)
 
 		alicesNutrient, err := store.Create(t.Context(), alice, Protein())
 		require.NoError(t, err)

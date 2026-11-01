@@ -73,8 +73,9 @@ cover: test
 			exit failed \
 		}' coverage.out
 
-# Runs the Firestore emulator, which the Firestore tests need: run them with
-# FIRESTORE_EMULATOR_HOST=localhost:8085 (they're skipped without it).
+# Runs the Firestore emulator, which the Firestore tests need. Run the tests
+# with FIRESTORE_EMULATOR_HOST=localhost:8085 make test; without it, they fail
+# rather than being skipped, so that they can't silently stop running.
 emulator:
 	gcloud emulators firestore start --host-port=localhost:8085
 

@@ -15,6 +15,8 @@ import (
 	"github.com/lafeingcrokodil/diary/internal/firestoredb"
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
+	"github.com/lafeingcrokodil/diary/internal/nutrient"
+	"github.com/lafeingcrokodil/diary/internal/nutrient/nutrienttest"
 )
 
 // emulatorTimeout is how long the tests wait for the Firestore emulator to
@@ -22,16 +24,15 @@ import (
 const emulatorTimeout = 5 * time.Second
 
 // newClient returns a client for the Firestore emulator, in a project of its
-// own, so that every client starts with an empty database. It skips the test if
-// FIRESTORE_EMULATOR_HOST isn't set, and fails it if the emulator doesn't
-// respond (the client would otherwise keep retrying until the test times out).
+// own, so that every client starts with an empty database. It fails the test
+// if FIRESTORE_EMULATOR_HOST isn't set, rather than skipping it, so that the
+// tests can't silently stop running, and if the emulator doesn't respond (the
+// client would otherwise keep retrying until the test times out).
 func newClient(t *testing.T) *firestore.Client {
 	t.Helper()
 
 	host := os.Getenv("FIRESTORE_EMULATOR_HOST")
-	if host == "" {
-		t.Skip("FIRESTORE_EMULATOR_HOST isn't set, so there's no Firestore emulator to test against")
-	}
+	require.NotEmpty(t, host, "FIRESTORE_EMULATOR_HOST isn't set, so there's no Firestore emulator to test against")
 
 	requireEmulator(t, host)
 
@@ -47,7 +48,21 @@ func newClient(t *testing.T) *firestore.Client {
 func TestFoodStore(t *testing.T) {
 	t.Parallel()
 
-	foodtest.CheckStore(t, func() food.Store { return firestoredb.NewFoodStore(newClient(t)) })
+	foodtest.CheckStore(t, func(t *testing.T) food.Store {
+		t.Helper()
+
+		return firestoredb.NewFoodStore(newClient(t))
+	})
+}
+
+func TestNutrientStore(t *testing.T) {
+	t.Parallel()
+
+	nutrienttest.CheckStore(t, func(t *testing.T) nutrient.Store {
+		t.Helper()
+
+		return firestoredb.NewNutrientStore(newClient(t))
+	})
 }
 
 // requireEmulator fails the test unless the Firestore emulator at host responds

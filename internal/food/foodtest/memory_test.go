@@ -10,5 +10,5 @@ import (
 func TestMemoryStore(t *testing.T) {
 	t.Parallel()
 
-	foodtest.CheckStore(t, func() food.Store { return foodtest.NewMemoryStore() })
+	foodtest.CheckStore(t, func(*testing.T) food.Store { return foodtest.NewMemoryStore() })
 }
