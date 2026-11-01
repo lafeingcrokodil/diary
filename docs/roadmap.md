@@ -98,7 +98,7 @@ or removed.
 - [x] Computed nutrition (domain function and API)
 - [x] Protecting foods that recipes use (deletion, unit changes, servings)
 - [x] Recipe list and editor UI
-- [ ] Nutrition in the recipe UI
+- [x] Nutrition in the recipe UI
 
 ### M6 – Diary
 
@@ -133,6 +133,10 @@ or removed.
   checked in the back end
 - Stable IDs for food servings, so that a serving that recipes use can be
   renamed (renaming one is refused for now)
+- A read-only view of a recipe for cooking from it, with its steps as a
+  checklist that isn't saved
+- Cloning a recipe, e.g. to make a version of a cake with less sugar, or a
+  vegetarian chili
 
 ## Open questions
 
