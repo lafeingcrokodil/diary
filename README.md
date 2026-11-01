@@ -42,6 +42,11 @@ comma-separated email addresses in `ALLOWED_EMAILS`, e.g.
 Firebase project in `FIREBASE_PROJECT_ID`, which `make run` sets to the app's
 project unless it's already set.
 
+The server keeps its data in Firestore. `make run` points it to the Firestore
+emulator on `localhost:8085` (via `FIRESTORE_EMULATOR_HOST`), so local runs
+never touch the real database: start the emulator with `make emulator` first.
+The emulator keeps its data in memory, so it starts empty each time.
+
 The Firestore tests run against the Firestore emulator. Start it with
 `make emulator`, then run the tests with `FIRESTORE_EMULATOR_HOST` pointing to
 it, e.g. `FIRESTORE_EMULATOR_HOST=localhost:8085 make cover`. Without
@@ -55,6 +60,10 @@ been built, they create a placeholder page so that the Go code compiles.
 
 For instant reloading while you edit the front end, run the Go server and Vite's
 dev server side by side:
+
+```bash
+make emulator                             # Firestore emulator on localhost:8085
+```
 
 ```bash
 ALLOWED_EMAILS=you@example.com make run   # Go server on http://localhost:8080

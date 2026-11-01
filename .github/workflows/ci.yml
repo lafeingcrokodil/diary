@@ -86,11 +86,14 @@ jobs:
       - run: docker build --tag diary .
       - name: Check that the image serves the app
         run: |
-          # The server requires its auth configuration, but these checks
-          # don't call the API, so any values will do.
+          # The server requires its auth and Firestore configuration, but
+          # these checks don't call the API, so any values will do. (With
+          # FIRESTORE_EMULATOR_HOST set, the server doesn't need Google Cloud
+          # credentials, and nothing needs to listen there.)
           docker run --detach --publish 8080:8080 \
             --env FIREBASE_PROJECT_ID=test \
             --env ALLOWED_EMAILS=nobody@example.com \
+            --env FIRESTORE_EMULATOR_HOST=localhost:8085 \
             diary
           # Give the server a few seconds to start.
           for attempt in 1 2 3 4 5; do

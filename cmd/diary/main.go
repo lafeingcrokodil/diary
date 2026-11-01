@@ -11,8 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/firestore"
+
 	"github.com/lafeingcrokodil/diary/internal/auth"
-	"github.com/lafeingcrokodil/diary/internal/food"
+	"github.com/lafeingcrokodil/diary/internal/firestoredb"
 	"github.com/lafeingcrokodil/diary/internal/logging"
 	"github.com/lafeingcrokodil/diary/internal/server"
 	"github.com/lafeingcrokodil/diary/web"
@@ -47,8 +49,15 @@ func main() {
 	// The verifier fetches signing keys as needed for as long as the server runs.
 	verifier := auth.NewFirebaseVerifier(context.Background(), projectID)
 
-	// Foods are kept in memory, so they're lost whenever the server stops.
-	foods := food.NewMemoryStore()
+	// The app's data is in the same project's Firestore database. The client
+	// talks to the emulator instead if FIRESTORE_EMULATOR_HOST is set.
+	firestoreClient, err := firestore.NewClient(context.Background(), projectID)
+	if err != nil {
+		slog.Error("connecting to Firestore", "err", err)
+		os.Exit(1)
+	}
+
+	foods := firestoredb.NewFoodStore(firestoreClient)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
@@ -64,8 +73,8 @@ func main() {
 	os.Exit(1)
 }
 
-// authConfig reads the ID of the Firebase project whose users can sign in
-// (FIREBASE_PROJECT_ID) and the comma-separated email addresses of the users
+// authConfig reads the ID of the Firebase project whose users can sign in, and
+// whose Firestore database the app uses (FIREBASE_PROJECT_ID), and the comma-separated email addresses of the users
 // who are allowed to use the app (ALLOWED_EMAILS). Both are required.
 func authConfig() (string, []string, error) {
 	projectID := os.Getenv("FIREBASE_PROJECT_ID")
