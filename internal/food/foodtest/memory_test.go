@@ -1,4 +1,4 @@
-package food_test
+package foodtest_test
 
 import (
 	"testing"
@@ -10,5 +10,5 @@ import (
 func TestMemoryStore(t *testing.T) {
 	t.Parallel()
 
-	foodtest.CheckStore(t, func() food.Store { return food.NewMemoryStore() })
+	foodtest.CheckStore(t, func() food.Store { return foodtest.NewMemoryStore() })
 }

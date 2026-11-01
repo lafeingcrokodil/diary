@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lafeingcrokodil/diary/internal/food"
+	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
@@ -93,7 +94,7 @@ func TestFoods(t *testing.T) {
 	t.Run("create, get and list", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(food.NewMemoryStore())
+		foods := newAPI(foodtest.NewMemoryStore())
 
 		rec := foods.do(t, http.MethodPost, "/api/foods", alice, bread)
 		require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
@@ -118,7 +119,7 @@ func TestFoods(t *testing.T) {
 	t.Run("list without foods", func(t *testing.T) {
 		t.Parallel()
 
-		rec := newAPI(food.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", alice, "")
+		rec := newAPI(foodtest.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", alice, "")
 		require.Equal(t, http.StatusOK, rec.Code)
 		assert.JSONEq(t, "[]", rec.Body.String())
 	})
@@ -126,7 +127,7 @@ func TestFoods(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(food.NewMemoryStore())
+		foods := newAPI(foodtest.NewMemoryStore())
 		created := foods.createBread(t)
 
 		// The ID in the body is ignored in favour of the one in the path.
@@ -147,7 +148,7 @@ func TestFoods(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(food.NewMemoryStore())
+		foods := newAPI(foodtest.NewMemoryStore())
 		created := foods.createBread(t)
 
 		rec := foods.do(t, http.MethodDelete, "/api/foods/"+created.ID, alice, "")
@@ -160,7 +161,7 @@ func TestFoods(t *testing.T) {
 	t.Run("missing food", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(food.NewMemoryStore())
+		foods := newAPI(foodtest.NewMemoryStore())
 
 		assert.Equal(t, http.StatusNotFound, foods.do(t, http.MethodGet, "/api/foods/missing", alice, "").Code)
 		assert.Equal(t, http.StatusNotFound, foods.do(t, http.MethodPut, "/api/foods/missing", alice, bread).Code)
@@ -170,7 +171,7 @@ func TestFoods(t *testing.T) {
 	t.Run("users can't reach each other's foods", func(t *testing.T) {
 		t.Parallel()
 
-		foods := newAPI(food.NewMemoryStore())
+		foods := newAPI(foodtest.NewMemoryStore())
 		alicesFood := foods.createBread(t)
 		path := "/api/foods/" + alicesFood.ID
 
@@ -188,7 +189,7 @@ func TestFoods(t *testing.T) {
 	t.Run("not signed in", func(t *testing.T) {
 		t.Parallel()
 
-		rec := newAPI(food.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", "", "")
+		rec := newAPI(foodtest.NewMemoryStore()).do(t, http.MethodGet, "/api/foods", "", "")
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	})
 }
@@ -207,7 +208,7 @@ func TestFoodsInvalidInput(t *testing.T) {
 		{"too large", `{"name":"` + strings.Repeat("a", 1<<20) + `","unit":"g"}`},
 	}
 
-	foods := newAPI(food.NewMemoryStore())
+	foods := newAPI(foodtest.NewMemoryStore())
 	created := foods.createBread(t)
 
 	for _, test := range tests {

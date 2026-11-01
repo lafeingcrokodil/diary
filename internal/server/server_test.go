@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
-	"github.com/lafeingcrokodil/diary/internal/food"
+	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
 	"github.com/lafeingcrokodil/diary/internal/server"
 )
 
@@ -105,7 +105,7 @@ func runTests(t *testing.T, tests []testCase) {
 		"index.html":     {Data: []byte(indexHTML)},
 		"_app/app.js":    {Data: []byte("console.log('hi');")},
 		"_app/immutable": {Mode: fs.ModeDir},
-	}, fakeAuth, food.NewMemoryStore())
+	}, fakeAuth, foodtest.NewMemoryStore())
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
