@@ -1,4 +1,5 @@
 import type { FoodInput, Serving, Unit } from '#lib/foods.ts';
+import type { Nutrient } from '#lib/nutrients.ts';
 
 // The values of a food's form fields, as the user typed them.
 export interface FoodForm {
@@ -7,6 +8,9 @@ export interface FoodForm {
 	unit: Unit;
 	kcalPer100: string;
 	servings: { name: string; amount: string }[];
+	// The amounts of nutrients, by nutrient ID. An empty field means that the
+	// amount is unknown.
+	nutrients: Record<string, string>;
 }
 
 // The outcome of reading a form: either a food to save, or what's wrong.
@@ -18,7 +22,8 @@ export const emptyForm = (): FoodForm => ({
 	brand: '',
 	unit: 'g',
 	kcalPer100: '',
-	servings: []
+	servings: [],
+	nutrients: {}
 });
 
 // Returns a form with a food's current values.
@@ -30,7 +35,10 @@ export const toForm = (input: FoodInput): FoodForm => ({
 	servings: input.servings.map((serving) => ({
 		name: serving.name,
 		amount: String(serving.amount)
-	}))
+	})),
+	nutrients: Object.fromEntries(
+		Object.entries(input.nutrients).map(([id, amount]) => [id, String(amount)])
+	)
 });
 
 // Reads a number field, or returns undefined if it isn't a finite number.
@@ -78,9 +86,48 @@ const readServings = (form: FoodForm): Serving[] | string => {
 	return servings;
 };
 
+// Reads the nutrient amounts, ignoring empty fields, or returns an error
+// message. Amounts of nutrients that aren't in nutrients (e.g. because they
+// were deleted) are dropped. Archived nutrients' amounts are kept, although
+// the form doesn't show them, so that saving the food doesn't lose them.
+const readNutrients = (
+	form: FoodForm,
+	nutrients: readonly Nutrient[]
+): Record<string, number> | string => {
+	const amounts: Record<string, number> = {};
+	for (const nutrient of nutrients) {
+		const text = form.nutrients[nutrient.id] ?? '';
+		if (text.trim() !== '') {
+			const amount = readNumber(text);
+			if (amount === undefined || amount < 0) {
+				return `The amount of ${nutrient.name} must be a number, 0 or more, or left empty.`;
+			}
+			amounts[nutrient.id] = amount;
+		}
+	}
+	return amounts;
+};
+
+// Reads the servings and nutrient amounts, or returns an error message.
+const readAmounts = (
+	form: FoodForm,
+	nutrients: readonly Nutrient[]
+): Pick<FoodInput, 'servings' | 'nutrients'> | string => {
+	const servings = readServings(form);
+	if (typeof servings === 'string') {
+		return servings;
+	}
+	const amounts = readNutrients(form, nutrients);
+	if (typeof amounts === 'string') {
+		return amounts;
+	}
+	return { servings, nutrients: amounts };
+};
+
 // Checks a form, with the same rules as the API, and returns the food it
-// describes. Numbers may use a decimal comma.
-export const parseForm = (form: FoodForm): ParsedForm => {
+// describes. nutrients are all of the user's nutrients, archived or not.
+// Numbers may use a decimal comma.
+export const parseForm = (form: FoodForm, nutrients: readonly Nutrient[]): ParsedForm => {
 	const name = form.name.trim();
 	if (name === '') {
 		return { ok: false, error: 'The name is required.' };
@@ -89,12 +136,12 @@ export const parseForm = (form: FoodForm): ParsedForm => {
 	if (kcalPer100 === undefined || kcalPer100 < 0) {
 		return { ok: false, error: 'The energy must be a number, 0 or more.' };
 	}
-	const servings = readServings(form);
-	if (typeof servings === 'string') {
-		return { ok: false, error: servings };
+	const amounts = readAmounts(form, nutrients);
+	if (typeof amounts === 'string') {
+		return { ok: false, error: amounts };
 	}
 	return {
 		ok: true,
-		input: { name, brand: form.brand.trim(), unit: form.unit, kcalPer100, servings }
+		input: { name, brand: form.brand.trim(), unit: form.unit, kcalPer100, ...amounts }
 	};
 };

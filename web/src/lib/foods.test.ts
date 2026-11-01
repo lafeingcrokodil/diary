@@ -20,7 +20,8 @@ const bread: FoodInput = {
 	brand: 'Bakery',
 	unit: 'g',
 	kcalPer100: 210,
-	servings: [{ name: 'slice', amount: 40 }]
+	servings: [{ name: 'slice', amount: 40 }],
+	nutrients: { protein: 8.5 }
 };
 
 const storedBread: Food = { id: 'food-1', ...bread };
@@ -71,8 +72,13 @@ describe('listFoods', () => {
 		expect(new Headers(init.headers).get('Authorization')).toBe('Bearer test-token');
 	});
 
-	it('rejects an invalid response', async () => {
-		respond([{ ...storedBread, unit: 'oz' }]);
+	it.each([
+		['an unknown unit', { unit: 'oz' }],
+		['no nutrients', { nutrients: undefined }],
+		["a nutrient amount that isn't a number", { nutrients: { protein: 'lots' } }],
+		['a list of nutrients', { nutrients: [bread.nutrients] }]
+	])('rejects a food with %s', async (_name, change) => {
+		respond([{ ...storedBread, ...change }]);
 
 		await expect(listFoods()).rejects.toThrow('invalid list of foods');
 	});

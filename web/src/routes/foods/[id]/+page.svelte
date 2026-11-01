@@ -5,9 +5,10 @@
 	import FoodEditor from '#lib/FoodEditor.svelte';
 	import { toForm } from '#lib/food-form.ts';
 	import { type Food, type FoodInput, deleteFood, getFood, updateFood } from '#lib/foods.ts';
+	import { type Nutrient, listNutrients } from '#lib/nutrients.ts';
 
 	const { id } = page.params;
-	const food: Promise<Food> = getFood(id ?? '');
+	const loading: Promise<[Food, Nutrient[]]> = Promise.all([getFood(id ?? ''), listNutrients()]);
 
 	const save = async (input: FoodInput): Promise<void> => {
 		await updateFood(id ?? '', input);
@@ -21,11 +22,11 @@
 </script>
 
 <main>
-	{#await food}
+	{#await loading}
 		<p class="muted">Loading…</p>
-	{:then loaded}
-		<h1>{loaded.name}</h1>
-		<FoodEditor initial={toForm(loaded)} ondelete={remove} onsave={save} />
+	{:then [food, nutrients]}
+		<h1>{food.name}</h1>
+		<FoodEditor initial={toForm(food)} {nutrients} ondelete={remove} onsave={save} />
 	{:catch error}
 		<p role="alert">Loading the food failed: {String(error)}</p>
 	{/await}

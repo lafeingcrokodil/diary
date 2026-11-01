@@ -4,6 +4,9 @@
 	import FoodEditor from '#lib/FoodEditor.svelte';
 	import { emptyForm } from '#lib/food-form.ts';
 	import { type FoodInput, createFood } from '#lib/foods.ts';
+	import { type Nutrient, listNutrients } from '#lib/nutrients.ts';
+
+	const nutrients: Promise<Nutrient[]> = listNutrients();
 
 	const save = async (input: FoodInput): Promise<void> => {
 		await createFood(input);
@@ -13,6 +16,12 @@
 
 <main>
 	<h1>New food</h1>
-	<FoodEditor initial={emptyForm()} onsave={save} />
+	{#await nutrients}
+		<p class="muted">Loading…</p>
+	{:then loaded}
+		<FoodEditor initial={emptyForm()} nutrients={loaded} onsave={save} />
+	{:catch error}
+		<p role="alert">Loading the nutrients failed: {String(error)}</p>
+	{/await}
 	<p><a href={resolve('/foods')}>Back to foods</a></p>
 </main>
