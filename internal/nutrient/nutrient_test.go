@@ -45,22 +45,3 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
-
-func TestDefaults(t *testing.T) {
-	t.Parallel()
-
-	defaults := nutrient.Defaults()
-
-	names := make([]string, 0, len(defaults))
-	for _, n := range defaults {
-		require.NoError(t, n.Validate(), n.Name)
-		assert.Positive(t, n.KcalPerGram, n.Name)
-		names = append(names, n.Name)
-	}
-
-	assert.Equal(t, []string{"Fat", "Carbohydrates", "Fibre", "Protein"}, names)
-
-	// Each call returns a new slice, so callers can't change later results.
-	defaults[0].Name = "Changed"
-	assert.Equal(t, "Fat", nutrient.Defaults()[0].Name)
-}

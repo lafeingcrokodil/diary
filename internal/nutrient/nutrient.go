@@ -56,23 +56,3 @@ func (n Nutrient) Validate() error {
 
 	return nil
 }
-
-// The energy per gram of the default nutrients, as used for food labels in the
-// EU (Regulation (EU) No 1169/2011, Annex XIV).
-const (
-	kcalPerGramOfFat          = 9
-	kcalPerGramOfCarbohydrate = 4
-	kcalPerGramOfFibre        = 2
-	kcalPerGramOfProtein      = 4
-)
-
-// Defaults returns the nutrients that users can start with, without IDs or
-// owners. Carbohydrates don't include fibre, as on EU food labels.
-func Defaults() []Nutrient {
-	return []Nutrient{
-		{Name: "Fat", Unit: Grams, KcalPerGram: kcalPerGramOfFat},
-		{Name: "Carbohydrates", Unit: Grams, KcalPerGram: kcalPerGramOfCarbohydrate},
-		{Name: "Fibre", Unit: Grams, KcalPerGram: kcalPerGramOfFibre},
-		{Name: "Protein", Unit: Grams, KcalPerGram: kcalPerGramOfProtein},
-	}
-}
