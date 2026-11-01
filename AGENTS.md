@@ -39,5 +39,5 @@ images). This is enforced where the tooling supports it: pnpm's
 The one exception is the distroless runtime image in the `Dockerfile`. Its
 images have no publication date, so Dependabot's cooldown can't apply, and its
 tag is republished often enough that the newest digest would rarely be 14 days
-old. Its digest updates can be merged as they come, since the image contains
-no application code beyond CA certificates, time zone data and user accounts.
+old. Its digest updates can be merged as they come, since the image only
+contains CA certificates, time zone data and user account files.
