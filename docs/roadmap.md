@@ -128,6 +128,11 @@ or removed.
   their kcal per gram)
 - Custom order for nutrients (e.g. the order of EU food labels), instead of
   sorting them by name
+- Forbid duplicate foods (same name and brand), nutrients and recipes (same
+  name), ignoring case and surrounding spaces, and counting archived ones,
+  checked in the back end
+- Stable IDs for food servings, so that a serving that recipes use can be
+  renamed (renaming one is refused for now)
 
 ## Open questions
 
