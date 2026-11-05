@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/lafeingcrokodil/diary/internal/auth"
+	"github.com/lafeingcrokodil/diary/internal/diary"
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/nutrient"
 	"github.com/lafeingcrokodil/diary/internal/recipe"
@@ -16,6 +17,7 @@ import (
 
 // Stores holds the stores that keep the app's data.
 type Stores struct {
+	Days      diary.Store
 	Foods     food.Store
 	Nutrients nutrient.Store
 	Recipes   recipe.Store
@@ -32,6 +34,7 @@ func New(frontend fs.FS, authenticate func(http.Handler) http.Handler, stores St
 	// known routes with other methods.
 	api := http.NewServeMux()
 	api.HandleFunc("GET /api/me", handleMe)
+	handleDays(api, stores.Days)
 	handleFoods(api, stores.Foods, stores.Nutrients, stores.Recipes)
 	handleNutrients(api, stores.Nutrients)
 	handleRecipes(api, stores.Recipes, stores.Foods)
