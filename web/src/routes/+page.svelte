@@ -1,12 +1,6 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import DayPage from '#lib/DayPage.svelte';
+	import { localDate } from '#lib/dates.ts';
 </script>
 
-<main>
-	<h1>Diary</h1>
-	<ul>
-		<li><a href={resolve('/foods')}>Foods</a></li>
-		<li><a href={resolve('/nutrients')}>Nutrients</a></li>
-		<li><a href={resolve('/recipes')}>Recipes</a></li>
-	</ul>
-</main>
+<DayPage date={localDate(new Date())} />
