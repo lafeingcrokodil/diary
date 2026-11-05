@@ -89,7 +89,8 @@ button,
 	border-radius: var(--radius);
 }
 
-button.secondary {
+button.secondary,
+.button.secondary {
 	color: var(--text);
 	background: transparent;
 	border-color: var(--border);
