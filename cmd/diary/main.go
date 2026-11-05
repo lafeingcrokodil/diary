@@ -58,6 +58,7 @@ func main() {
 	}
 
 	stores := server.Stores{
+		Days:      firestoredb.NewDayStore(firestoreClient),
 		Foods:     firestoredb.NewFoodStore(firestoreClient),
 		Nutrients: firestoredb.NewNutrientStore(firestoreClient),
 		Recipes:   firestoredb.NewRecipeStore(firestoreClient),
