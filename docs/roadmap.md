@@ -102,8 +102,29 @@ or removed.
 
 ### M6 – Diary
 
-- [ ] Daily log with body weight and energy expended
-- [ ] Diary entries and daily totals
+Each day, a user can log their body weight (in kg) and the energy they
+expended over the whole day (in kcal), both optional. A day is a calendar date
+without a time zone, which the front end picks from the user's local date.
+
+A day's entries are a flat list, sorted by their time of day (a local time
+like 12:30, which every entry has). Each entry is either one of the user's
+foods, with an amount in the food's unit or as a number of one of its
+servings, or one of their recipes, as a fraction of the whole recipe.
+
+Like a recipe's nutrition, a day's totals are computed from the current foods
+and recipes, so correcting a food corrects every day that it was eaten, and an
+amount that's unknown for some entry is shown as incomplete. So that entries'
+amounts keep their meaning, a food or recipe that an entry uses can't be
+deleted (only archived), and a food that an entry uses can't have its unit
+changed, or have a serving that the entry uses renamed or removed.
+
+- [x] Daily log: domain types and storage interface (in-memory and Firestore)
+- [ ] Daily log API
+- [ ] Diary page with body weight and energy expended, as the home page
+- [ ] Diary entries: domain types and storage
+- [ ] Diary entries API, with protecting the foods and recipes that entries use
+- [ ] Daily totals (domain function and API)
+- [ ] Entries and totals in the diary page
 
 ### M7 – Targets
 
@@ -137,15 +158,12 @@ or removed.
   checklist that isn't saved
 - Cloning a recipe, e.g. to make a version of a cake with less sugar, or a
   vegetarian chili
+- Notes on diary entries
 
 ## Open questions
 
 To be discussed when we reach the relevant milestone:
 
-- Should diary entries be able to reference a single food as well as a recipe?
-- Should past diary entries change when a recipe or food is edited, or keep a
-  snapshot? (This also decides what permanently deleting a food does to
-  diary entries that use it.)
 - Where does food data come from (manual entry, imports)?
 - Are shopping lists generated from recipes, manual, or both? One list or
   several?

@@ -51,7 +51,7 @@ linters:
       - path: _test\.go
         linters:
           - dupl
-      - path: ^internal/(food/foodtest|nutrient/nutrienttest|recipe/recipetest)/
+      - path: ^internal/(diary/diarytest|food/foodtest|nutrient/nutrienttest|recipe/recipetest)/
         linters:
           - funlen
           - goconst
