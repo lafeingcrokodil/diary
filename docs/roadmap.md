@@ -158,7 +158,6 @@ changed, or have a serving that the entry uses renamed or removed.
   checklist that isn't saved
 - Cloning a recipe, e.g. to make a version of a cake with less sugar, or a
   vegetarian chili
-- Notes on diary entries
 
 ## Open questions
 
