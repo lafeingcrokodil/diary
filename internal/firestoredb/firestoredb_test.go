@@ -12,6 +12,8 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/stretchr/testify/require"
 
+	"github.com/lafeingcrokodil/diary/internal/diary"
+	"github.com/lafeingcrokodil/diary/internal/diary/diarytest"
 	"github.com/lafeingcrokodil/diary/internal/firestoredb"
 	"github.com/lafeingcrokodil/diary/internal/food"
 	"github.com/lafeingcrokodil/diary/internal/food/foodtest"
@@ -89,6 +91,16 @@ func TestNutrientStoreDeleteRemovesAmounts(t *testing.T) {
 			Foods:     firestoredb.NewFoodStore(client),
 			Nutrients: firestoredb.NewNutrientStore(client),
 		}
+	})
+}
+
+func TestDayStore(t *testing.T) {
+	t.Parallel()
+
+	diarytest.CheckStore(t, func(t *testing.T) diary.Store {
+		t.Helper()
+
+		return firestoredb.NewDayStore(newClient(t))
 	})
 }
 
