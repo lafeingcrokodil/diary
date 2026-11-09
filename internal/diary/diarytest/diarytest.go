@@ -17,7 +17,8 @@ const (
 )
 
 // Monday returns a valid day with everything logged, which tests can change as
-// they need.
+// they need. Its entries are sorted by time: a food in its own unit, a recipe,
+// and a food in one of its servings.
 func Monday() diary.Day {
 	weight, kcal := 70.5, 2300.0
 
@@ -25,6 +26,11 @@ func Monday() diary.Day {
 		Date:         "2026-11-02",
 		WeightKg:     &weight,
 		KcalExpended: &kcal,
+		Entries: []diary.Entry{
+			{Time: "08:15", FoodID: "oats", Amount: 60},
+			{Time: "12:30", RecipeID: "soup", Amount: 0.5},
+			{Time: "16:00", FoodID: "bread", Serving: "slice", Amount: 2},
+		},
 	}
 }
 
@@ -70,6 +76,62 @@ func CheckStore(t *testing.T, newStore func(t *testing.T) diary.Store) {
 		require.NoError(t, err)
 		assert.Nil(t, got.WeightKg)
 		assert.Equal(t, input.KcalExpended, got.KcalExpended)
+	})
+
+	t.Run("entries are stored sorted by time", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore(t)
+
+		input := Monday()
+		sorted := input.Entries
+		// The two entries at 16:00 keep their order.
+		late := diary.Entry{Time: "16:00", FoodID: "apple", Amount: 150}
+		input.Entries = []diary.Entry{sorted[2], late, sorted[0], sorted[1]}
+
+		stored, err := store.Put(t.Context(), alice, input)
+		require.NoError(t, err)
+
+		want := []diary.Entry{sorted[0], sorted[1], sorted[2], late}
+		assert.Equal(t, want, stored.Entries)
+
+		got, err := store.Get(t.Context(), alice, input.Date)
+		require.NoError(t, err)
+		assert.Equal(t, want, got.Entries)
+	})
+
+	t.Run("a day with only entries is kept", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore(t)
+
+		input := diary.Day{Date: Monday().Date, Entries: Monday().Entries}
+
+		_, err := store.Put(t.Context(), alice, input)
+		require.NoError(t, err)
+
+		got, err := store.Get(t.Context(), alice, input.Date)
+		require.NoError(t, err)
+
+		input.Owner = alice
+		assert.Equal(t, input, got)
+	})
+
+	t.Run("a day without entries has nil entries", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore(t)
+
+		input := Monday()
+		input.Entries = []diary.Entry{}
+
+		stored, err := store.Put(t.Context(), alice, input)
+		require.NoError(t, err)
+		assert.Nil(t, stored.Entries)
+
+		got, err := store.Get(t.Context(), alice, input.Date)
+		require.NoError(t, err)
+		assert.Nil(t, got.Entries)
 	})
 
 	t.Run("get a day that nothing is logged for", func(t *testing.T) {

@@ -121,7 +121,7 @@ changed, or have a serving that the entry uses renamed or removed.
 - [x] Daily log: domain types and storage interface (in-memory and Firestore)
 - [x] Daily log API
 - [x] Diary page with body weight and energy expended, as the home page
-- [ ] Diary entries: domain types and storage
+- [x] Diary entries: domain types and storage
 - [ ] Diary entries API, with protecting the foods and recipes that entries use
 - [ ] Daily totals (domain function and API)
 - [ ] Entries and totals in the diary page

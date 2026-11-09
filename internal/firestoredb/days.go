@@ -19,29 +19,57 @@ const daysCollection = "days"
 // dayDoc is how a day is stored. Days that nothing is logged for aren't
 // stored.
 type dayDoc struct {
-	Owner        string   `firestore:"owner"`
-	Date         string   `firestore:"date"`
-	WeightKg     *float64 `firestore:"weightKg"`
-	KcalExpended *float64 `firestore:"kcalExpended"`
+	Owner        string     `firestore:"owner"`
+	Date         string     `firestore:"date"`
+	WeightKg     *float64   `firestore:"weightKg"`
+	KcalExpended *float64   `firestore:"kcalExpended"`
+	Entries      []entryDoc `firestore:"entries"`
 }
 
 func (d dayDoc) owner() string { return d.Owner }
 
+type entryDoc struct {
+	Time     string  `firestore:"time"`
+	FoodID   string  `firestore:"foodId"`
+	Serving  string  `firestore:"serving"`
+	RecipeID string  `firestore:"recipeId"`
+	Amount   float64 `firestore:"amount"`
+}
+
 func toDayDoc(owner string, day diary.Day) dayDoc {
+	sorted := diary.SortedEntries(day.Entries)
+
+	// Never nil, so that a day without entries is stored as an empty array.
+	entries := make([]entryDoc, 0, len(sorted))
+	for _, entry := range sorted {
+		entries = append(entries, entryDoc(entry))
+	}
+
 	return dayDoc{
 		Owner:        owner,
 		Date:         day.Date,
 		WeightKg:     day.WeightKg,
 		KcalExpended: day.KcalExpended,
+		Entries:      entries,
 	}
 }
 
 func fromDayDoc(doc dayDoc) diary.Day {
+	// Nil if there are no entries, as diary.SortedEntries returns them.
+	var entries []diary.Entry
+	if len(doc.Entries) > 0 {
+		entries = make([]diary.Entry, 0, len(doc.Entries))
+		for _, entry := range doc.Entries {
+			entries = append(entries, diary.Entry(entry))
+		}
+	}
+
 	return diary.Day{
 		Owner:        doc.Owner,
 		Date:         doc.Date,
 		WeightKg:     doc.WeightKg,
 		KcalExpended: doc.KcalExpended,
+		Entries:      entries,
 	}
 }
 

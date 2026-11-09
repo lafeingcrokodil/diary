@@ -3,6 +3,7 @@ package diarytest
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/lafeingcrokodil/diary/internal/diary"
@@ -54,6 +55,7 @@ func (s *MemoryStore) Put(_ context.Context, owner string, day diary.Day) (diary
 	defer s.mu.Unlock()
 
 	day.Owner = owner
+	day.Entries = diary.SortedEntries(day.Entries)
 
 	if day.IsEmpty() {
 		delete(s.days, key{owner, day.Date})
@@ -71,6 +73,7 @@ func (s *MemoryStore) Put(_ context.Context, owner string, day diary.Day) (diary
 func clone(day diary.Day) diary.Day {
 	day.WeightKg = clonePointer(day.WeightKg)
 	day.KcalExpended = clonePointer(day.KcalExpended)
+	day.Entries = slices.Clone(day.Entries)
 
 	return day
 }
