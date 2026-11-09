@@ -1,6 +1,6 @@
 import type { FoodInput, Serving, Unit } from '#lib/foods.ts';
 import type { Nutrient } from '#lib/nutrients.ts';
-import { readNumber } from '#lib/numbers.ts';
+import { readNumber, readOptionalNumber } from '#lib/numbers.ts';
 
 // The values of a food's form fields, as the user typed them.
 export interface FoodForm {
@@ -90,12 +90,11 @@ const readNutrients = (
 ): Record<string, number> | string => {
 	const amounts: Record<string, number> = {};
 	for (const nutrient of nutrients) {
-		const text = form.nutrients[nutrient.id] ?? '';
-		if (text.trim() !== '') {
-			const amount = readNumber(text);
-			if (amount === undefined || amount < 0) {
-				return `The amount of ${nutrient.name} must be a number, 0 or more, or left empty.`;
-			}
+		const amount = readOptionalNumber(form.nutrients[nutrient.id] ?? '');
+		if (amount === undefined || (amount !== null && amount < 0)) {
+			return `The amount of ${nutrient.name} must be a number, 0 or more, or left empty.`;
+		}
+		if (amount !== null) {
 			amounts[nutrient.id] = amount;
 		}
 	}
