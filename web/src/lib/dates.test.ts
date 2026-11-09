@@ -26,22 +26,24 @@ describe('localDate', () => {
 });
 
 const BACK = -1;
+const NONE = 0;
+const FORWARD = 1;
 
 describe('addDays', () => {
 	it.each<[string, number, string]>([
-		['2026-11-05', 1, '2026-11-06'],
+		['2026-11-05', FORWARD, '2026-11-06'],
 		['2026-11-05', BACK, '2026-11-04'],
-		['2026-11-05', 0, '2026-11-05'],
-		['2026-12-31', 1, '2027-01-01'],
+		['2026-11-05', NONE, '2026-11-05'],
+		['2026-12-31', FORWARD, '2027-01-01'],
 		['2028-03-01', BACK, '2028-02-29'],
 		// The day that clocks go back in much of Europe.
-		['2026-10-25', 1, '2026-10-26']
+		['2026-10-25', FORWARD, '2026-10-26']
 	])('%s plus %i days is %s', (date, days, want) => {
 		expect(addDays(date, days)).toBe(want);
 	});
 
 	it('rejects dates that are not real', () => {
-		expect(() => addDays('2026-02-30', 1)).toThrow(RangeError);
+		expect(() => addDays('2026-02-30', FORWARD)).toThrow(RangeError);
 	});
 });
 
