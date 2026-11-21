@@ -24,7 +24,21 @@ a{color:var(--accent)}
 header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 12px;min-height:36px}
 header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
 .datenav{display:flex;align-items:center;gap:4px}
-.datenav span{min-width:104px;text-align:center;font-weight:600}
+.datenav{min-width:0}
+/* The date label is a native date input made invisible and laid over the text, so tapping anywhere on it opens the browser's date picker. */
+.datepick{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:92px;height:36px;padding:0 6px;border-radius:10px;font-weight:600;white-space:nowrap;cursor:pointer}
+.datepick .caret{font-size:10px;color:var(--muted)}
+.datepick:hover{background:var(--line)}
+.datepick:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.datepick input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;opacity:0;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none}
+.datepick input::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:auto;height:auto;margin:0;padding:0;cursor:pointer}
+@media (prefers-color-scheme:dark){.datepick input{color-scheme:dark}}
+/* Fallback where the picker can't be opened from the label: the date input itself is shown, to type a date or use its calendar button. */
+.datepick.typing{padding:0}
+.datepick.typing .lbl,.datepick.typing .caret{display:none}
+.datepick.typing input::-webkit-calendar-picker-indicator{position:static;width:auto;height:auto}
+.datepick.typing input{position:static;opacity:1;width:auto;height:36px;padding:0 8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:15px;-webkit-appearance:auto;appearance:auto}
+.today-btn{height:36px;padding:0 10px;color:var(--accent);font-weight:600;margin-left:2px}
 .icon-btn{border:1px solid var(--line);background:var(--card);border-radius:10px;min-width:36px;height:36px;display:grid;place-items:center;cursor:pointer;padding:0 8px}
 .icon-btn:disabled{opacity:.4}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
@@ -481,7 +495,7 @@ function renderDiary(){
   const est=ctx.est;
   const wf=ctx.weightFrom;
   const entries=sortedEntries(day);
-  return `<header><h1>Diary</h1><div class="datenav"><button class="icon-btn" data-act="prevDay" aria-label="Previous day">‹</button><span>${fmtDate(S.date)}</span><button class="icon-btn" data-act="nextDay" ${S.date>=today()?"disabled":""} aria-label="Next day">›</button></div><button class="icon-btn" data-act="openSettings" aria-label="Settings">⚙︎</button></header>
+  return `<header><h1>Diary</h1><div class="datenav"><button class="icon-btn" data-act="prevDay" aria-label="Previous day">‹</button><label class="datepick"><span class="lbl">${fmtDate(S.date)}</span><span class="caret" aria-hidden="true">▾</span><input type="date" data-inp="date" value="${S.date}" max="${today()}" aria-label="Choose a date"></label><button class="icon-btn" data-act="nextDay" ${S.date>=today()?"disabled":""} aria-label="Next day">›</button>${S.date!==today()?`<button class="btn sm today-btn" data-act="goToday">Today</button>`:""}</div><button class="icon-btn" data-act="openSettings" aria-label="Settings">⚙︎</button></header>
   ${!S.settings.age||!S.settings.height?`<div class="card"><h2>Set up</h2><div class="small">Add your age and height (⚙︎) and your weight below, so energy expended can be estimated and per-kg targets work.</div></div>`:""}
   <div class="card"><h2>Totals</h2>${rows}</div>
   <div class="card"><h2>Body &amp; energy</h2>
@@ -1079,6 +1093,7 @@ const acts={
   nextDay:()=>{const d=addDays(S.date,1);if(d<=today())openDate(d);},
   openSettings,
   range:n=>{S.range=+n;lsSet("ft2:ui:range",S.range);render();},
+  goToday:()=>openDate(today()),
   goDay:k=>{if(k<=today()){openDate(k);window.scrollTo(0,0);}},
   editEntry:id=>{const e=curDay().entries.find(x=>x.id===id);if(e)openAmount(clone(e));},
   "new-food":()=>openFoodEditor(null),editFood:id=>openFoodEditor(id),
@@ -1094,13 +1109,24 @@ const acts={
   delList:()=>{const l=curList();openSheet("Delete “"+l.name+"”?",`<div class="small">This removes the list and its ${l.items.length} item${l.items.length===1?"":"s"}.</div><div class="btns"><button class="btn danger" id="dlOk">Delete</button></div>`,sh=>{$("#dlOk",sh).onclick=()=>{S.lists=S.lists.filter(x=>x.id!==l.id);store.del("lists",l.id);S.listId=null;closeSheet();render();};});},
   listAddRecipe:()=>openAddRecipeToList(null),
 };
-$("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const fn=acts[el.dataset.act];if(fn){fn(el.dataset.id);}});
+// Browsers that support this pseudo-element get it stretched over the whole label (see .datepick), so a click anywhere opens the picker.
+// Others (e.g. Firefox) only open the picker from their own small calendar button, so a click asks for the picker directly,
+// and where that's not allowed (e.g. in a cross-origin frame) shows the date input itself.
+const pickerStretches=CSS.supports("selector(::-webkit-calendar-picker-indicator)");
+function openDatePicker(inp){
+  if(pickerStretches)return;
+  try{inp.showPicker();}catch(e){inp.closest(".datepick").classList.add("typing");inp.focus();}
+}
+$("#app").addEventListener("focusout",e=>{const dp=e.target.closest(".datepick.typing");if(dp)setTimeout(()=>{if(document.activeElement!==e.target)dp.classList.remove("typing");},0);});
+$("#app").addEventListener("click",e=>{if(e.target.matches(".datepick input"))openDatePicker(e.target);const el=e.target.closest("[data-act]");if(!el)return;const fn=acts[el.dataset.act];if(fn){fn(el.dataset.id);}});
 $("#app").addEventListener("input",e=>{const el=e.target;
   if(el.dataset.inp==="day"&&el.type!=="checkbox")dayInput(el);
   if(el.dataset.inp==="search"){const k=el.dataset.kind==="food"?"foods":"recipes";S.search[k]=el.value;const pos=el.selectionStart;render();const n=$(`[data-inp=search]`);if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(x){}}}
 });
 $("#app").addEventListener("change",e=>{const el=e.target;
   if(el.dataset.inp==="day"&&el.type==="checkbox"){dayInput(el);}
+  // The value is empty while a date is only partly typed; future days can't be logged yet.
+  if(el.dataset.inp==="date"&&/^\d{4}-\d{2}-\d{2}$/.test(el.value)&&el.value<=today())openDate(el.value);
   if(el.dataset.inp==="arch"){const k={food:"foods",recipe:"recipes",nutrients:"nutrients"}[el.dataset.kind];S.showArchived[k]=el.checked;render();}
 });
 $("#app").addEventListener("submit",e=>{if(e.target.id==="shopAdd"){e.preventDefault();const v=$("#shopText").value.trim();if(!v)return;const l=ensureList();l.items.push({id:"i"+uid(),text:v,done:false});saveList(l);render();setTimeout(()=>$("#shopText")?.focus(),0);}});

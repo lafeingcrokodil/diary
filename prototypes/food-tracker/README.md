@@ -21,7 +21,9 @@ It covers:
 - **Diary:** per day, body weight and energy expended (both optional) and a
   flat list of entries, each a food or a fraction of a recipe, with an
   optional time. Totals are computed from the current foods and recipes, and
-  shown as incomplete when a value is unknown.
+  shown as incomplete when a value is unknown. Days are chosen with previous
+  and next buttons, the browser's date picker (opened by tapping the date) or
+  a Today button.
 - **Trends:** over the last 7, 30 or 90 days, net energy per day (eaten minus
   expended, coloured by whether energy eaten was within its target) and body
   weight, with the change over the period.
