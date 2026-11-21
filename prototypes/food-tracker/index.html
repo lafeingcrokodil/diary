@@ -179,6 +179,8 @@ img.preview{max-width:100%;max-height:180px;border-radius:10px;margin-top:10px;d
 
 <script>
 /* ======================= Built-in table of common foods =======================
+   Foods that usually have no nutrition label in German supermarkets: loose fruit and vegetables, eggs,
+   and what's sold at the bakery, meat, cheese and fish counters. Raw values, as bought, unless the name says otherwise.
    name | kcal | fat | total carbs (incl. fibre) | protein | fibre | portion g | portion label — per 100 g */
 const FOODS_RAW = `Apple (Apfel)|52|0.2|14|0.3|2.4|150|piece
 Banana (Banane)|89|0.3|23|1.1|2.6|120|piece
@@ -186,97 +188,69 @@ Orange|47|0.1|12|0.9|2.4|150|piece
 Pear (Birne)|57|0.1|15|0.4|3.1|170|piece
 Mandarin / clementine|53|0.3|13|0.8|1.8|80|piece
 Kiwi|61|0.5|15|1.1|3|75|piece
+Nectarine / peach (Nektarine)|44|0.3|11|1.1|1.7|140|piece
+Plum (Pflaume)|46|0.3|11|0.7|1.4|35|piece
 Grapes (Trauben)|69|0.2|18|0.7|0.9|100|handful
+Cherries (Kirschen)|63|0.2|16|1.1|2.1|100|handful
 Strawberries (Erdbeeren)|32|0.3|7.7|0.7|2|150|bowl
 Blueberries (Heidelbeeren)|57|0.3|14|0.7|2.4|100|bowl
 Raspberries (Himbeeren)|52|0.7|12|1.2|6.5|100|bowl
 Mango|60|0.4|15|0.8|1.6|300|piece
 Pineapple (Ananas)|50|0.1|13|0.5|1.4|150|serving
+Watermelon (Wassermelone)|30|0.2|7.6|0.6|0.4|300|slice
 Grapefruit|42|0.1|11|0.8|1.6|260|piece
 Avocado|160|15|9|2|6.7|150|piece
 Carrot (Karotte)|41|0.2|10|0.9|2.8|60|piece
 Tomato (Tomate)|18|0.2|3.9|0.9|1.2|120|piece
+Cherry tomatoes (Cocktailtomaten)|18|0.2|3.9|0.9|1.2|15|piece
 Cucumber (Gurke)|15|0.1|3.6|0.7|0.5|300|piece
 Bell pepper (Paprika)|31|0.3|6|1|2.1|150|piece
-Broccoli, cooked|35|0.4|7|2.4|3.3|150|serving
-Spinach, raw (Spinat)|23|0.4|3.6|2.9|2.2|50|handful
-Mixed salad leaves|15|0.2|2.9|1.4|1.3|60|bowl
+Broccoli (Brokkoli)|34|0.4|6.6|2.8|2.6|150|serving
+Cauliflower (Blumenkohl)|25|0.3|5|1.9|2|150|serving
+Green beans (Grüne Bohnen)|31|0.2|7|1.8|2.7|150|serving
+Spinach (Spinat)|23|0.4|3.6|2.9|2.2|50|handful
+Lettuce (Kopfsalat)|15|0.2|2.9|1.4|1.3|60|bowl
 Zucchini|17|0.3|3.1|1.2|1|150|serving
+Kohlrabi|27|0.1|6.2|1.7|3.6|250|piece
+Leek (Lauch)|61|0.3|14|1.5|1.8|150|serving
+Pumpkin (Kürbis)|26|0.1|6.5|1|0.5|200|serving
 Mushrooms (Champignons)|22|0.3|3.3|3.1|1|100|serving
 Onion (Zwiebel)|40|0.1|9|1.1|1.7|80|piece
-Peas, cooked (Erbsen)|84|0.2|16|5.4|5.5|100|serving
-Sauerkraut|19|0.1|4.3|0.9|2.9|150|serving
-Potatoes, boiled (Kartoffeln)|87|0.1|20|1.9|1.8|200|serving
-Sweet potato, baked|90|0.2|21|2|3.3|200|piece
-Pasta, cooked (Nudeln)|158|0.9|31|5.8|1.8|200|plate
-Wholewheat pasta, cooked|149|1.7|30|6|4.5|200|plate
-Rice, white, cooked (Reis)|130|0.3|28|2.7|0.4|180|serving
-Rice, brown, cooked|123|1|26|2.7|1.6|180|serving
-Rolled oats (Haferflocken)|379|6.5|68|13|10|10|tbsp
-Muesli, unsweetened|360|6|62|10|8|60|bowl
-Granola / crunchy muesli|471|20|64|10|6|50|serving
-Cornflakes|357|0.4|84|7.5|3.3|40|bowl
+Garlic (Knoblauch)|149|0.5|33|6.4|2.1|4|clove
+Potatoes (Kartoffeln)|77|0.1|17|2|2.2|200|serving
+Sweet potato (Süßkartoffel)|86|0.1|20|1.6|3|200|piece
+Egg (Ei)|143|9.5|0.7|12.6|0|60|piece
 Wholegrain rye bread (Vollkornbrot)|215|1.2|46|6|8|50|slice
 Mixed wheat-rye bread (Mischbrot)|230|1.2|48|7|4.5|50|slice
-White toast|265|3.2|49|9|2.7|30|slice
+Baguette|262|1.3|54|9|2.5|30|slice
 Bread roll (Brötchen)|275|1.5|56|9|3|55|piece
 Wholegrain roll (Vollkornbrötchen)|250|2.5|47|9|6|60|piece
 Pretzel (Brezel)|275|2|57|8|2.5|80|piece
 Croissant|406|21|46|8|2.6|60|piece
-Rice cakes (Reiswaffeln)|387|2.8|81|8|4|10|piece
-Egg (Ei)|143|9.5|0.7|12.6|0|60|piece
-Milk 1.5% (Milch)|47|1.5|4.8|3.4|0|250|glass
-Milk 3.5%|64|3.5|4.8|3.3|0|250|glass
-Oat drink (Haferdrink)|46|1.5|6.7|1|0.8|250|glass
-Soy drink, unsweetened|33|1.8|0.7|3.3|0.5|250|glass
-Natural yoghurt 3.5% (Joghurt)|61|3.5|4.5|3.4|0|150|pot
-Low-fat yoghurt 1.5%|47|1.5|4.6|3.8|0|150|pot
-Greek yoghurt 10%|122|10|3.6|4.5|0|150|pot
-Skyr|63|0.2|4|11|0|150|pot
-Low-fat quark (Magerquark)|67|0.3|4|12|0|250|tub
-Cottage cheese (Hüttenkäse)|98|4.3|3.4|11|0|200|tub
-Gouda|356|27|2|25|0|30|slice
-Mozzarella|250|19|1|18|0|120|ball
-Feta|264|21|4|14|0|50|serving
-Parmesan|392|26|3|36|0|10|tbsp grated
-Butter|717|81|0.1|0.9|0|10|portion
-Olive oil (Olivenöl)|884|100|0|0|0|10|tbsp
-Rapeseed oil (Rapsöl)|884|100|0|0|0|10|tbsp
-Peanut butter (Erdnussbutter)|588|50|20|25|6|15|tbsp
-Almonds (Mandeln)|579|50|22|21|12.5|25|handful
-Walnuts (Walnüsse)|654|65|14|15|6.7|25|handful
-Mixed nuts (Nussmischung)|607|54|21|20|7|25|handful
-Chia seeds|486|31|42|17|34|15|tbsp
-Linseed (Leinsamen)|534|42|29|18|27|10|tbsp
-Chicken breast, cooked (Hähnchenbrust)|165|3.6|0|31|0|150|fillet
-Turkey breast, sliced (Putenbrust)|105|1.5|1|22|0|15|slice
-Beef mince, cooked (Rinderhack)|250|17|0|26|0|125|serving
-Pork schnitzel, breaded|235|12|11|21|0.5|150|piece
-Bratwurst|300|26|1|14|0|100|sausage
-Cooked ham (Kochschinken)|110|3|1|19|0|15|slice
-Salami|400|34|1|22|0|5|slice
-Salmon, cooked (Lachs)|206|12|0|22|0|125|fillet
-Tuna in water, drained (Thunfisch)|116|0.8|0|26|0|80|can drained
-Tofu|144|8.7|2.8|17|2.3|400|block
-Lentils, cooked (Linsen)|116|0.4|20|9|7.9|150|serving
-Chickpeas, cooked (Kichererbsen)|164|2.6|27|8.9|7.6|150|serving
-Kidney beans, canned|100|0.5|17|7|6|150|serving
-Edamame|121|5.2|9|12|5.2|100|serving
-Hummus|166|9.6|14|7.9|6|25|tbsp
-Pizza margherita|250|10|30|10|2|350|piece
-Döner kebab|215|10|20|11|1.5|350|piece
-French fries (Pommes)|312|15|41|3.4|3.8|150|portion
-Dark chocolate 70%|598|43|46|7.8|11|10|square
-Milk chocolate (Vollmilch)|535|30|59|7.6|3.4|100|bar
-Gummy bears (Gummibärchen)|343|0.2|77|7|0|25|handful
-Crisps (Chips)|536|35|53|7|4.8|30|small bowl
-Honey (Honig)|304|0|82|0.3|0.2|10|tsp heaped
-Jam (Marmelade)|250|0.1|62|0.4|1|15|tbsp
-Protein bar (typical)|360|12|35|30|5|50|piece
+Doughnut (Berliner)|350|15|46|6|1.5|70|piece
+Crumb cake (Streuselkuchen)|370|16|52|5.5|1.5|100|piece
 Cappuccino|45|2.2|3.6|2.4|0|200|cup
 Latte macchiato|55|2.8|4.5|3|0|300|glass
-Orange juice (Orangensaft)|45|0.2|10|0.7|0.2|200|glass
-Cola|42|0|10.6|0|0|330|can
+Gouda|356|27|2|25|0|30|slice
+Emmental (Emmentaler)|380|30|0.1|28.5|0|25|slice
+Mountain cheese (Bergkäse)|400|32|0|28|0|30|slice
+Feta|264|21|4|14|0|50|serving
+Parmesan|392|26|3|36|0|10|tbsp grated
+Chicken breast (Hähnchenbrust)|110|1.5|0|23|0|150|fillet
+Turkey breast, sliced (Putenbrust)|105|1.5|1|22|0|15|slice
+Pork schnitzel (Schweineschnitzel)|106|1.9|0|22|0|150|piece
+Rump steak (Rumpsteak)|150|7|0|21.5|0|200|steak
+Beef mince (Rinderhack)|215|15|0|20|0|125|serving
+Mixed mince (Gemischtes Hack)|260|20|0|19|0|125|serving
+Bratwurst|300|26|1|14|0|100|sausage
+Wiener sausage (Wiener Würstchen)|270|24|0.5|13|0|50|sausage
+Meatball, fried (Frikadelle)|240|16|8|15|0.5|80|piece
+Leberkäse|297|27|0.5|12.5|0|100|slice
+Cooked ham (Kochschinken)|110|3|1|19|0|15|slice
+Salami|400|34|1|22|0|5|slice
+Salmon (Lachs)|208|13|0|20|0|125|fillet
+Cod (Kabeljau)|82|0.7|0|18|0|150|fillet
+Matjes herring (Matjes)|260|22|0|16|0|50|fillet
 Beer (Bier)|43|0|3.6|0.5|0|1000|litre
 Wine, red or white|83|0|2.6|0.1|0|150|glass`;
 const COMMON = FOODS_RAW.split("\n").map((l,i)=>{const p=l.split("|");const fib=+p[5];
@@ -1054,17 +1028,42 @@ function openNutrientEditor(id){
 
 /* ======================= Shopping lists ======================= */
 function curList(){let l=S.lists.find(x=>x.id===S.listId);if(!l)l=S.lists.slice().sort((a,b)=>(a.created||0)-(b.created||0))[0];if(l)S.listId=l.id;return l;}
-function itemText(it){if(it.food){const f=getFood(it.food);return {t:f?f.name:"(deleted food)",a:it.amount!=null?`${fmt(it.amount)} ${f?f.unit:""}`:""};}return {t:it.text,a:""};}
+function itemText(it){if(it.food){const f=getFood(it.food);return {t:f?f.name+(f.brand?" · "+f.brand:""):"(deleted food)",a:it.amount!=null?`${fmt(it.amount)} ${f?f.unit:""}`:""};}return {t:it.text,a:""};}
 function renderShopping(){
   const l=curList();
   const lists=S.lists.slice().sort((a,b)=>(a.created||0)-(b.created||0));
   return `<header><h1>Shopping</h1><button class="btn primary sm" data-act="newList">+ List</button></header>
   ${lists.length>1?`<div class="chips">${lists.map(x=>`<button class="chip ${x.id===l.id?"on":""}" data-act="pickList" data-id="${x.id}">${esc(x.name)}</button>`).join("")}</div>`:""}
   ${l?`<div class="card"><h2><span>${esc(l.name)}</span><span><button class="btn sm" data-act="renameList">Rename</button></span></h2>
-    <form id="shopAdd" style="display:flex;gap:8px"><input type="text" id="shopText" placeholder="Add an item"><button class="btn" type="submit">Add</button></form>
+    <form id="shopAdd" style="display:flex;gap:8px"><input type="text" id="shopText" placeholder="Add an item or search foods" autocomplete="off"><button class="btn" type="submit">Add</button></form>
+    <div id="shopSug"></div>
     <div style="margin-top:10px">${l.items.length?l.items.map(it=>{const x=itemText(it);return `<div class="shop ${it.done?"done":""}"><input type="checkbox" data-act="toggleItem" data-id="${it.id}" ${it.done?"checked":""} aria-label="Done"><span class="t">${esc(x.t)}${x.a?` <span class="muted small">${esc(x.a)}</span>`:""}${it.from?`<div class="tiny muted">${esc(it.from)}</div>`:""}</span><button class="x" data-act="rmItem" data-id="${it.id}" aria-label="Remove">×</button></div>`;}).join(""):`<div class="empty">Empty. Add items, or add a recipe's ingredients.</div>`}</div>
     <div class="btns"><button class="btn" data-act="listAddRecipe">+ Recipe ingredients</button>${l.items.some(i=>i.done)?`<button class="btn" data-act="clearDone">Remove ticked</button>`:""}<button class="btn danger" data-act="delList">Delete list</button></div></div>`
   :`<div class="card"><div class="empty">No shopping lists yet.</div><div class="btns"><button class="btn primary" data-act="newList">Create a list</button></div></div>`}`;
+}
+// Foods matching the shopping list's text field: your foods first, then common foods you don't have yet.
+function shopMatches(q){
+  const words=norm(q).split(/\s+/).filter(Boolean);if(!words.length)return [];
+  const hit=s=>words.every(w=>norm(s).includes(w));
+  const mine=S.foods.filter(f=>!f.archived&&hit([f.name,f.brand||"",f.barcode||""].join(" "))).sort(byName).map(f=>({id:"f:"+f.id,name:f.name+(f.brand?" · "+f.brand:""),sub:"Your food"}));
+  const have=new Set(S.foods.filter(f=>!f.archived).map(f=>norm(f.name)));
+  const com=COMMON.filter(c=>hit(c.name)&&!have.has(norm(c.name))).map(c=>({id:"c:"+c.cid,name:c.name,sub:"Common food"}));
+  return [...mine,...com].slice(0,8);
+}
+function drawShopSug(q){
+  const el=$("#shopSug");if(!el)return;const m=shopMatches(q);
+  el.innerHTML=m.length?`<div style="margin-top:6px">${m.map(x=>`<div class="li" data-act="shopPick" data-id="${esc(x.id)}"><div><div>${esc(x.name)}</div><div class="sub">${x.sub}</div></div><div class="sub">+</div></div>`).join("")}</div>`:"";
+}
+// Adds a suggested food to the current list, unless it's already on it and not ticked.
+// A common food is saved to your foods first (or unarchived, if you archived it), as when it's logged in the diary.
+function addShopPick(id){
+  const l=ensureList(),kind=id.slice(0,1);let ref=id.slice(2);
+  if(kind==="c"){const c=COMMON.find(x=>x.cid===ref);if(!c)return;
+    let f=S.foods.find(x=>x.archived&&norm(x.name)===norm(c.name)&&!x.brand);
+    if(f)f.archived=false;else f=foodFromCommon(c);
+    saveFood(f);ref=f.id;}
+  if(!l.items.some(i=>i.food===ref&&!i.done))l.items.push({id:"i"+uid(),food:ref,amount:null,done:false});
+  saveList(l);render();setTimeout(()=>$("#shopText")?.focus(),0);
 }
 function ensureList(){let l=curList();if(!l){l={id:"l"+uid(),name:"Shopping list",items:[],created:Date.now()};saveList(l);S.listId=l.id;}return l;}
 function openAddRecipeToList(preset){
@@ -1108,6 +1107,7 @@ const acts={
   clearDone:()=>{const l=curList();l.items=l.items.filter(i=>!i.done);saveList(l);render();},
   delList:()=>{const l=curList();openSheet("Delete “"+l.name+"”?",`<div class="small">This removes the list and its ${l.items.length} item${l.items.length===1?"":"s"}.</div><div class="btns"><button class="btn danger" id="dlOk">Delete</button></div>`,sh=>{$("#dlOk",sh).onclick=()=>{S.lists=S.lists.filter(x=>x.id!==l.id);store.del("lists",l.id);S.listId=null;closeSheet();render();};});},
   listAddRecipe:()=>openAddRecipeToList(null),
+  shopPick:id=>addShopPick(id),
 };
 // Browsers that support this pseudo-element get it stretched over the whole label (see .datepick), so a click anywhere opens the picker.
 // Others (e.g. Firefox) only open the picker from their own small calendar button, so a click asks for the picker directly,
@@ -1121,6 +1121,7 @@ $("#app").addEventListener("focusout",e=>{const dp=e.target.closest(".datepick.t
 $("#app").addEventListener("click",e=>{if(e.target.matches(".datepick input"))openDatePicker(e.target);const el=e.target.closest("[data-act]");if(!el)return;const fn=acts[el.dataset.act];if(fn){fn(el.dataset.id);}});
 $("#app").addEventListener("input",e=>{const el=e.target;
   if(el.dataset.inp==="day"&&el.type!=="checkbox")dayInput(el);
+  if(el.id==="shopText")drawShopSug(el.value);
   if(el.dataset.inp==="search"){const k=el.dataset.kind==="food"?"foods":"recipes";S.search[k]=el.value;const pos=el.selectionStart;render();const n=$(`[data-inp=search]`);if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(x){}}}
 });
 $("#app").addEventListener("change",e=>{const el=e.target;

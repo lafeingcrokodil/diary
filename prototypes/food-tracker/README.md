@@ -31,8 +31,10 @@ It covers:
   a percentage of energy expended, and per kg body weight). The effective range
   is the highest minimum to the lowest maximum; targets whose inputs are
   missing are skipped, and conflicts are shown as a warning.
-- **Shopping lists (M8):** several lists, with typed items and a recipe's
-  ingredients (scaled, and combined with matching unticked items).
+- **Shopping lists (M8):** several lists, with typed items, foods found by
+  searching (the user's foods and the common foods, shown with their brand)
+  and a recipe's ingredients (scaled, and combined with matching unticked
+  items).
 - Foods and recipes that recipes or diary entries use can be archived but not
   deleted, and a used food's unit can't be changed nor its used servings
   removed. Renaming a used serving updates the recipes and diary entries that
@@ -40,8 +42,11 @@ It covers:
 
 Beyond the roadmap:
 
-- A built-in table of about 100 common foods (typical values per 100 g), which
-  are copied into the user's foods when first logged.
+- A built-in table of about 70 common foods that usually have no nutrition
+  label in German supermarkets (loose fruit and vegetables, eggs, and food from
+  the bakery, meat, cheese and fish counters), with typical values per 100 g.
+  They're copied into the user's foods when first logged or added to a
+  shopping list.
 - An estimate of energy expended from age, height, weight, steps and
   bouldering, used when none is entered for a day.
 - Per-kg targets use the latest weight logged on or before the day, not only
