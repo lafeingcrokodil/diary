@@ -694,7 +694,7 @@ function openAmount(entry,opts={}){
       <div class="chips" id="aq">${[[0.25,"¼"],[1/3,"⅓"],[0.5,"½"],[0.75,"¾"],[1,"Whole"]].map(([v,l])=>`<button class="chip" data-a="${v}">${l}</button>`).join("")}</div>
       <label class="f">Fraction of the whole recipe</label><input type="text" inputmode="decimal" autocomplete="off" id="aAmt" step="any" min="0" value="${e.amount??1}">`;
   }
-  html+=`<div style="margin-top:10px"><label class="f">Time (optional)</label><div style="display:flex;gap:8px"><input type="time" id="aTime" value="${e.time||""}"><button class="btn sm" id="aNoTime" type="button">No time</button></div></div>
+  html+=`<div style="margin-top:10px"><label class="f">Time (optional)</label><div style="display:flex;gap:8px"><input type="time" id="aTime" value="${esc(e.time)}"><button class="btn sm" id="aNoTime" type="button">No time</button></div></div>
     <div class="note" id="aCalc"></div>
     ${false&&opts.newFromLabel?`<div class="tiny muted" style="margin-top:8px">This product will be saved to your foods${food.barcode?" with barcode "+esc(food.barcode):""}${food.ingredients?", with its ingredient list":""}.${(food.estimated||[]).length?` Not printed on the label, so estimated: ${food.estimated.map(id=>esc(getNut(id)?.name||"")).join(", ")}.`:""}</div>`:""}
     <div class="btns"><button class="btn primary" id="aOk">${isNew?"Add":"Save"}</button>${isNew?"":`<button class="btn danger" id="aDel">Remove</button>`}${!isNew&&food?`<button class="btn" id="aEditFood">Edit food</button>`:""}</div>`;
