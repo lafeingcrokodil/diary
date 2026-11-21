@@ -27,7 +27,9 @@ It covers:
 - **Shopping lists (M8):** several lists, with typed items and a recipe's
   ingredients (scaled, and combined with matching unticked items).
 - Foods and recipes that recipes or diary entries use can be archived but not
-  deleted, and a used food's unit and used servings can't be changed.
+  deleted, and a used food's unit can't be changed nor its used servings
+  removed. Renaming a used serving updates the recipes and diary entries that
+  use it.
 
 Beyond the roadmap:
 
@@ -41,10 +43,12 @@ Beyond the roadmap:
   weight and nutrients) from the name, brand or restaurant, description or
   ingredient list, and photos that aren't saved. Estimated values are marked
   until they're edited.
+- A backup of all the user's data as a JSON file in a "Diary Backups" folder
+  in their Google Drive.
 
 ## Running it
 
 The page expects the artifact runtime's `window.claude.use()`: `db` and `user`
-for storage per user, and `sample` for Claude's estimates. Opened as a plain
-file, it falls back to the browser's `localStorage` and hides the Claude
-features.
+for storage per user, `sample` for Claude's estimates, and `mcp` with the
+Google Drive connector for backups. Opened as a plain file, it falls back to
+the browser's `localStorage` and hides the Claude and Google Drive features.
