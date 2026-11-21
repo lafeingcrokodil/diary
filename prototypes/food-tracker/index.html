@@ -607,12 +607,14 @@ async function collectBackup(){
   days.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   return {app:"Diary",exportedAt:new Date().toISOString(),settings,nutrients,foods,recipes,lists,days};
 }
-// Finds the backup folder at the top of My Drive, creating it on first use.
+// Finds the backup folder (the oldest one you own with that name, if there are several), creating it on first use.
+// The search has no parent clause because Drive search matches nothing for parentId = 'root', even for folders at the top of My Drive.
 async function backupFolder(){
   if(backupFolderId)return backupFolderId;
-  const q=`title = '${BACKUP_FOLDER}' and mimeType = 'application/vnd.google-apps.folder' and parentId = 'root' and trashed = false`;
-  const found=(await mcp.callTool(DRIVE,"search_files",{query:q,excludeContentSnippets:true,pageSize:1},{cache:false})).payload;
-  let id=found&&found.files&&found.files[0]&&found.files[0].id;
+  const q=`title = '${BACKUP_FOLDER}' and mimeType = 'application/vnd.google-apps.folder' and owner = 'me' and trashed = false`;
+  const found=(await mcp.callTool(DRIVE,"search_files",{query:q,excludeContentSnippets:true,pageSize:50},{cache:false})).payload;
+  const folders=((found&&found.files)||[]).filter(f=>f&&f.id&&f.title===BACKUP_FOLDER).sort((a,b)=>String(a.createdTime||"").localeCompare(String(b.createdTime||"")));
+  let id=folders[0]&&folders[0].id;
   if(!id){const made=(await mcp.callTool(DRIVE,"create_file",{title:BACKUP_FOLDER,contentMimeType:"application/vnd.google-apps.folder"})).payload;id=made&&(made.id||made.file&&made.file.id);}
   if(!id)throw {code:"no_folder"};
   return backupFolderId=id;
