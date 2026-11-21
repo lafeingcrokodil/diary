@@ -781,16 +781,16 @@ async function openFoodEditor(id){
       <label class="f" style="margin-top:12px">Name</label><input type="text" id="fName" value="${esc(f.name)}">
       <div class="grid2" style="margin-top:8px"><div><label class="f">Brand or restaurant (optional)</label><input type="text" id="fBrand" value="${esc(f.brand||"")}"></div>
       <div><label class="f">Unit</label><select id="fUnit" ${u.used?"disabled":""}><option value="g" ${f.unit==="g"?"selected":""}>grams (g)</option><option value="ml" ${f.unit==="ml"?"selected":""}>millilitres (ml)</option></select></div>
-      <div><label class="f">Energy (kcal per 100 <span class="uu">${f.unit}</span>)${estTag("kcal")}</label><input type="text" inputmode="decimal" autocomplete="off" id="fKcal" value="${f.kcalPer100??""}"></div>
+      <div><label class="f">Energy (kcal per 100 <span class="uu">${esc(f.unit)}</span>)${estTag("kcal")}</label><input type="text" inputmode="decimal" autocomplete="off" id="fKcal" value="${f.kcalPer100??""}"></div>
       <div><label class="f">Barcode (optional)</label><input type="text" id="fBarcode" inputmode="numeric" value="${esc(f.barcode||"")}"></div></div>
       <label class="f" style="margin-top:8px" for="fIng">Description or ingredients (optional)</label><textarea id="fIng" style="min-height:64px" placeholder="e.g. the menu description of a dish, or the ingredient list (Zutaten) from a package">${esc(f.ingredients||"")}</textarea>
       ${sample?`<button class="btn sm primary" id="fEst" style="margin-top:8px">Estimate blank values with Claude</button>`:""}
       <div id="fEstOut">${estNote?`<div class="note">${estNote}</div>`:""}</div>
       ${u.used?`<div class="tiny muted" style="margin-top:6px">Used in ${esc(usageText(u))}, so the unit can't be changed and the servings those use can't be removed. Renaming a serving updates them too.</div>`:""}
       <div class="sec">Servings</div><div id="servs">${f.servings.map((s,i)=>{const locked=u.servings.has(s.name);
-        return `<div class="serv"><input type="text" data-si="${i}" data-sk="name" value="${esc(s.name)}" placeholder="e.g. slice"><input type="text" inputmode="decimal" autocomplete="off" data-si="${i}" data-sk="amount" value="${s.amount??""}" placeholder="${f.unit}"><button class="x" data-srm="${i}" ${locked?"disabled title='In use'":""} aria-label="Remove">×</button></div>`;}).join("")}</div>
+        return `<div class="serv"><input type="text" data-si="${i}" data-sk="name" value="${esc(s.name)}" placeholder="e.g. slice"><input type="text" inputmode="decimal" autocomplete="off" data-si="${i}" data-sk="amount" value="${s.amount??""}" placeholder="${esc(f.unit)}"><button class="x" data-srm="${i}" ${locked?"disabled title='In use'":""} aria-label="Remove">×</button></div>`;}).join("")}</div>
       <button class="btn sm" id="addServ">+ Serving</button>
-      <div class="sec">Nutrients per 100 <span class="uu">${f.unit}</span> <span style="text-transform:none;letter-spacing:0;font-weight:400">— leave blank if unknown</span></div>
+      <div class="sec">Nutrients per 100 <span class="uu">${esc(f.unit)}</span> <span style="text-transform:none;letter-spacing:0;font-weight:400">— leave blank if unknown</span></div>
       ${activeNuts().map(n=>`<div class="nrow"><label for="fn-${n.id}">${esc(n.name)} (${esc(n.unit)})${estTag(n.id)}</label><input type="text" inputmode="decimal" autocomplete="off" id="fn-${n.id}" data-nid="${n.id}" value="${f.nutrients[n.id]??""}"></div>`).join("")||`<div class="empty">No nutrients yet — add them on the Nutrients page.</div>`}
       <div id="fErr"></div>
       <div class="btns"><button class="btn primary" id="fSave">Save</button>${orig?`<button class="btn" id="fArch">${f.archived?"Unarchive":"Archive"}</button><button class="btn danger" id="fDel" ${u.used?"disabled":""}>Delete</button>`:""}</div>
