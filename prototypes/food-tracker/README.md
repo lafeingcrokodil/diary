@@ -15,11 +15,16 @@ It covers:
   ingredient list, with archiving and deletion.
 - **Recipes:** source URL, ingredients (foods, in the food's unit or as
   servings, with notes), steps and notes, with nutrition computed from the
-  current foods.
+  current foods. Recipes open in a read-only view for cooking, with larger
+  text and ingredients and steps that can be ticked off, and an editor behind
+  an Edit button.
 - **Diary:** per day, body weight and energy expended (both optional) and a
   flat list of entries, each a food or a fraction of a recipe, with an
   optional time. Totals are computed from the current foods and recipes, and
   shown as incomplete when a value is unknown.
+- **Trends:** over the last 7, 30 or 90 days, net energy per day (eaten minus
+  expended, coloured by whether energy eaten was within its target) and body
+  weight, with the change over the period.
 - **Targets (M7):** up to six per nutrient and for energy (min/max per day, as
   a percentage of energy expended, and per kg body weight). The effective range
   is the highest minimum to the lowest maximum; targets whose inputs are

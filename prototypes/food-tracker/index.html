@@ -90,6 +90,40 @@ nav.tabbar a.on{color:var(--accent);font-weight:700}
 .hist .b{width:100%;border-radius:6px 6px 2px 2px;background:var(--bar);min-height:2px}
 .hist .b.lo{background:var(--warn)}.hist .b.hi{background:var(--bad)}.hist .b.none{background:var(--line)}
 .hist .t{font-size:11px;color:var(--muted)}
+.trend-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:20px 2px 10px}
+.trend-head h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0;font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.seg button{border:none;background:none;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--ink);color:var(--card);font-weight:600}
+.card h2 .chg{text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.plot{position:relative;height:130px;margin:8px 0 0 42px}
+.plot .yl{position:absolute;left:-42px;width:36px;text-align:right;font-size:11px;color:var(--muted);transform:translateY(-50%);font-variant-numeric:tabular-nums;line-height:1}
+.plot .gl{position:absolute;left:0;right:0;height:1px;background:var(--line)}
+.plot .gl.zero{background:var(--muted);opacity:.7}
+.nh{position:absolute;inset:0;display:flex}
+.nh .col{flex:1;position:relative;cursor:pointer}
+.nh .band{position:absolute;left:0;right:0;background:var(--zone);opacity:.75}
+.nh .b{position:absolute;left:14%;right:14%;background:var(--bar);min-height:2px;border-radius:3px}
+.nh.dense .b{left:8%;right:8%;border-radius:1px}
+.nh .b.lo{background:var(--warn)}.nh .b.hi{background:var(--bad)}.nh .b.none{background:var(--muted);opacity:.5}
+.xax{display:flex;justify-content:space-between;margin:5px 0 0 42px;font-size:11px;color:var(--muted)}
+.xax.days span{flex:1;text-align:center}
+.plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wd{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--card);transform:translate(-50%,-50%);box-sizing:content-box;cursor:pointer}
+.wd.sm{width:5px;height:5px;border-width:1.5px}
+.rv-src{margin:-4px 0 4px;font-size:14px}
+.rv-ing{display:flex;gap:12px;align-items:baseline;padding:11px 2px;border-top:1px solid var(--line);font-size:17px;line-height:1.4;cursor:pointer}
+.rv-ing:first-child{border-top:none}
+.rv-ing .amt{flex:none;width:96px;font-weight:600;font-variant-numeric:tabular-nums}
+.rv-ing .amt small{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.rv-ing .nt{font-size:14px;color:var(--muted)}
+.rv-step{display:flex;gap:12px;padding:13px 2px;border-top:1px solid var(--line);font-size:17px;line-height:1.55;cursor:pointer}
+.rv-step:first-child{border-top:none}
+.rv-step .no{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:14px;margin-top:1px}
+.rv-ing.done,.rv-step.done{opacity:.45}
+.rv-ing.done .nm,.rv-step.done .tx{text-decoration:line-through}
+.rv-notes{font-size:16px;line-height:1.55;white-space:pre-wrap}
 .legend{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .status{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
@@ -462,15 +496,81 @@ function renderDiary(){
   <div class="card"><h2>Food log</h2>${entries.length?entries.map(e=>{const L=entryLabel(e),tt=entryTotals(e);const inc=Object.values(tt.n).some(x=>x.inc);
     return `<div class="entry" data-act="editEntry" data-id="${e.id}"><div class="n"><div>${esc(L.name)}</div><div class="tiny muted">${e.time?esc(e.time)+" · ":""}${esc(L.amt)}${inc?" · some values unknown":""}</div></div><div class="k">${fmt(tt.kcal,"kcal")}</div></div>`;}).join("")
     :`<div class="empty">Nothing logged yet — tap “+ Add food”.</div>`}</div>
-  ${histCard()}`;
+  ${trendCards()}`;
 }
-function histCard(){
-  const days=[];for(let i=6;i>=0;i--)days.push(addDays(S.date,-i));
-  let max=1;const rows=days.map(k=>{const d=S.days[k];if(!d||!d.entries.length)return {k};const t=dayTotals(d),c=ctxFor(d),R=effRange(S.settings.energyTargets,c,true);max=Math.max(max,t.kcal,R&&R.hi||0);return {k,t,R};});
-  let logged=0,inR=0;
-  const bars=rows.map(({k,t,R})=>{let cls="none",h=3;if(t){logged++;cls=statusOf(t.kcal,R);if(cls==="na")cls="ok";if(cls==="ok")inR++;h=Math.max(3,t.kcal/max*100);}
-    return `<div class="col"><div class="b ${cls}" style="height:${h}%"></div><div class="t">${new Date(k+"T12:00").toLocaleDateString("en-GB",{weekday:"narrow"})}</div></div>`;}).join("");
-  return `<div class="card"><h2>Energy, last 7 days</h2><div class="hist">${bars}</div><div class="legend"><span><i style="background:var(--bar)"></i>In range</span><span><i style="background:var(--warn)"></i>Under</span><span><i style="background:var(--bad)"></i>Over</span></div><div class="tiny muted" style="margin-top:6px">${logged?`${logged} day${logged>1?"s":""} logged · energy in range on ${inR}`:"Log a few days to see your week."}</div></div>`;
+/* ======================= Trends (net energy & body weight) ======================= */
+const RANGES=[7,30,90];
+S.range=RANGES.includes(lsGet("ft2:ui:range"))?lsGet("ft2:ui:range"):7;
+S.loadedFrom=null;let loadingFrom=null;
+// Loads saved days from `from` onwards, keeping days already in memory (they may have unsaved changes).
+async function ensureDays(from){
+  if(S.loadedFrom&&from>=S.loadedFrom||loadingFrom&&from>=loadingFrom)return;
+  loadingFrom=from;
+  let ok=false;
+  try{const got=await store.where("days","date",">=",from);for(const d of got)if(!S.days[d.date])S.days[d.date]=d;S.loadedFrom=from;ok=true;}catch(e){}
+  loadingFrom=null;if(!ok)return;
+  const a=document.activeElement;
+  if(S.page==="diary"&&!(a&&$("#app").contains(a)&&/INPUT|SELECT|TEXTAREA/.test(a.tagName)))render();
+}
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x))),f=x/p;return (f<=1?1:f<=2?2:f<=5?5:10)*p;}
+const shortDate=k=>new Date(k+"T12:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+function xAxis(days){
+  if(days.length<=7)return `<div class="xax days">${days.map(k=>`<span>${new Date(k+"T12:00").toLocaleDateString("en-GB",{weekday:"narrow"})}</span>`).join("")}</div>`;
+  return `<div class="xax"><span>${shortDate(days[0])}</span><span>${shortDate(days[Math.floor(days.length/2)])}</span><span>${shortDate(days[days.length-1])}</span></div>`;
+}
+function trendCards(){
+  const days=[];for(let i=S.range-1;i>=0;i--)days.push(addDays(S.date,-i));
+  ensureDays(days[0]);
+  return `<div class="trend-head"><h2>Trends</h2><div class="seg" role="group" aria-label="Time span">${RANGES.map(n=>`<button data-act="range" data-id="${n}" class="${n===S.range?"on":""}" aria-pressed="${n===S.range}">${n} days</button>`).join("")}</div></div>
+  ${netCard(days)}${weightCard(days)}`;
+}
+// Net energy is eaten minus expended. Bars are coloured by whether energy eaten is within the energy target range.
+function netCard(days){
+  const rows=days.map(k=>{const d=S.days[k];if(!d||!d.entries.length)return {k};
+    const t=dayTotals(d),c=ctxFor(d),R=effRange(S.settings.energyTargets,c,true);
+    let st=statusOf(t.kcal,R);if(st==="na")st="ok";
+    if(c.expended==null)return {k,t,st,net:null};
+    const band=R&&!R.conflict&&(R.lo!=null||R.hi!=null)?{lo:R.lo!=null?R.lo-c.expended:null,hi:R.hi!=null?R.hi-c.expended:null}:null;
+    return {k,t,st,net:t.kcal-c.expended,band,exp:c.expended,src:c.expSrc};});
+  const logged=rows.filter(r=>r.t),withNet=rows.filter(r=>r.net!=null);
+  if(!logged.length)return `<div class="card"><h2>Net energy</h2><div class="empty">No food logged in the last ${S.range} days.</div></div>`;
+  const vals=[0];for(const r of withNet){vals.push(r.net);if(r.band){if(r.band.lo!=null)vals.push(r.band.lo);if(r.band.hi!=null)vals.push(r.band.hi);}}
+  let top=Math.max(...vals),bot=Math.min(...vals);
+  const step=niceStep(Math.max(top-bot,400)/4);top=Math.ceil(top/step)*step;bot=Math.floor(bot/step)*step;if(top===bot)top=bot+step;
+  const y=v=>(top-v)/(top-bot)*100;
+  const sign=v=>(v>0?"+":v<0?"−":"")+fmt(Math.abs(v),"kcal");
+  const cols=rows.map(r=>{let inner="",tip=fmtDate(r.k);
+    if(r.t&&r.net==null){inner=`<div class="b none" style="top:calc(${y(0)}% - 1px);height:3px;min-height:0"></div>`;tip+=`: ${fmt(r.t.kcal,"kcal")} kcal eaten, energy expended unknown`;}
+    else if(r.t){
+      if(r.band){const a=y(r.band.hi!=null?r.band.hi:top),b=y(r.band.lo!=null?r.band.lo:bot);inner+=`<div class="band" style="top:${a}%;height:${b-a}%"></div>`;}
+      const a=y(Math.max(r.net,0)),b=y(Math.min(r.net,0));
+      inner+=`<div class="b ${r.st}" style="top:${a}%;height:${b-a}%"></div>`;
+      tip+=`: net ${sign(r.net)} kcal (${fmt(r.t.kcal,"kcal")} eaten − ${fmt(r.exp,"kcal")} ${r.src==="estimated"?"estimated ":""}expended)`;}
+    return `<div class="col" data-act="goDay" data-id="${r.k}" title="${esc(tip)}">${inner}</div>`;}).join("");
+  const labels=[[top,sign(top)],[0,"0"],[bot,sign(bot)]].filter(([v],i)=>i===1||Math.abs(y(v)-y(0))>14);
+  const inR=logged.filter(r=>r.st==="ok").length;
+  const avg=withNet.length?withNet.reduce((a,r)=>a+r.net,0)/withNet.length:null;
+  return `<div class="card"><h2><span>Net energy</span>${avg!=null?`<span class="chg">avg ${sign(avg)} kcal/day</span>`:""}</h2>
+    <div class="plot">${labels.map(([v,l])=>`<div class="gl ${v===0?"zero":""}" style="top:${y(v)}%"></div><div class="yl" style="top:${y(v)}%">${l}</div>`).join("")}<div class="nh ${days.length>7?"dense":""}">${cols}</div></div>
+    ${xAxis(days)}
+    <div class="legend"><span><i style="background:var(--bar)"></i>In range</span><span><i style="background:var(--warn)"></i>Under</span><span><i style="background:var(--bad)"></i>Over</span><span><i style="background:var(--zone)"></i>Target range</span></div>
+    <div class="tiny muted" style="margin-top:6px">Net = eaten − expended. Colours compare energy eaten with your target. ${logged.length} day${logged.length>1?"s":""} logged · in range on ${inR}${logged.length>withNet.length?` · ${logged.length-withNet.length} without energy expended`:""}.</div></div>`;
+}
+const onDate=k=>k===today()?"today":k===addDays(today(),-1)?"yesterday":"on "+fmtDate(k);
+function weightCard(days){
+  const n=days.length,pts=days.map((k,i)=>({i,k,kg:S.days[k]?.weight})).filter(p=>p.kg!=null);
+  if(!pts.length)return `<div class="card"><h2>Body weight</h2><div class="empty">No weight logged in the last ${n} days.</div></div>`;
+  let lo=Math.min(...pts.map(p=>p.kg)),hi=Math.max(...pts.map(p=>p.kg));
+  lo=Math.floor(lo*2)/2;hi=Math.ceil(hi*2)/2;if(hi-lo<1){const m=(hi+lo)/2;lo=m-.5;hi=m+.5;}
+  const x=i=>(i+.5)/n*100,y=v=>(hi-v)/(hi-lo)*100;
+  const first=pts[0],last=pts[pts.length-1],d=last.kg-first.kg;
+  const chg=pts.length>1?`${d>0?"+":d<0?"−":"±"}${fmt(Math.abs(d))} kg`:"";
+  return `<div class="card"><h2><span>Body weight</span>${chg?`<span class="chg">${chg}</span>`:""}</h2>
+    <div class="plot">${[hi,(hi+lo)/2,lo].map(v=>`<div class="gl" style="top:${y(v)}%"></div><div class="yl" style="top:${y(v)}%">${fmt(v)}</div>`).join("")}
+      ${pts.length>1?`<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.map(p=>x(p.i)+","+y(p.kg)).join(" ")}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`:""}
+      ${pts.map(p=>`<div class="wd ${n>30?"sm":""}" style="left:${x(p.i)}%;top:${y(p.kg)}%" data-act="goDay" data-id="${p.k}" title="${esc(fmtDate(p.k)+": "+fmt(p.kg)+" kg")}"></div>`).join("")}</div>
+    ${xAxis(days)}
+    <div class="tiny muted" style="margin-top:6px">${pts.length>1?`${fmt(first.kg)} kg ${onDate(first.k)} → ${fmt(last.kg)} kg ${onDate(last.k)} · ${pts.length} weigh-ins`:`${fmt(last.kg)} kg ${onDate(last.k)} · log more weigh-ins to see the change`}.</div></div>`;
 }
 async function openDate(date){S.date=date;if(!S.days[date]){const d=await store.get("days",date);if(d)S.days[date]=d;}render();}
 let dayTimer;
@@ -779,13 +879,48 @@ function renderRecipes(){
   const q=norm(S.search.recipes),arch=S.showArchived.recipes;
   const list=S.recipes.filter(r=>(arch?r.archived:!r.archived)&&(!q||norm(r.name).includes(q))).sort(byName);
   return listHeader("Recipes","recipe","New recipe")+`<div style="margin-top:8px">${list.length?list.map(r=>{const t=recipeTotals(r);
-    return `<div class="li" data-act="editRecipe" data-id="${r.id}"><div><div>${esc(r.name)}</div><div class="sub">${(r.ingredients||[]).length} ingredient${(r.ingredients||[]).length===1?"":"s"} · ${t.inc?"≥ ":""}${fmt(t.kcal,"kcal")} kcal whole recipe</div></div><div class="sub">›</div></div>`;}).join("")
+    return `<div class="li" data-act="viewRecipe" data-id="${r.id}"><div><div>${esc(r.name)}</div><div class="sub">${(r.ingredients||[]).length} ingredient${(r.ingredients||[]).length===1?"":"s"} · ${t.inc?"≥ ":""}${fmt(t.kcal,"kcal")} kcal whole recipe</div></div><div class="sub">›</div></div>`;}).join("")
     :`<div class="empty">${arch?"No archived recipes.":"No recipes yet. Ingredients are your foods, so add those first."}</div>`}</div></div>`;
 }
-async function openRecipeEditor(id){
+// Read-only view for following a recipe. Tapping an ingredient or step ticks it off; ticks last until the page is reloaded.
+const recipeTicks={};
+function ingAmountText(ing,f){
+  if(!f)return {main:fmt(ing.amount),sub:""};
+  if(!ing.serving)return {main:`${fmt(ing.amount)} ${f.unit}`,sub:""};
+  const b=baseAmount(f,ing.amount,ing.serving);
+  return {main:`${fmt(ing.amount)} × ${ing.serving}`,sub:b!=null?`${fmt(b)} ${f.unit}`:""};
+}
+function openRecipeView(id){
+  const r=getRecipe(id);if(!r)return;
+  const ticks=recipeTicks[id]||(recipeTicks[id]=new Set());
+  const t=recipeTotals(r),ings=r.ingredients||[],steps=r.steps||[];
+  openSheet(r.name,`
+    ${r.archived?`<div><span class="pill na">archived</span></div>`:""}
+    ${r.source&&/^https?:\/\//.test(r.source)?`<div class="rv-src"><a href="${esc(r.source)}" target="_blank" rel="noopener">Original recipe ↗</a></div>`:""}
+    <div class="btns" style="margin-top:4px"><button class="btn primary sm" id="rvEdit">Edit</button><button class="btn sm" id="rvShop">Add to shopping list</button>${ticks.size?`<button class="btn sm" id="rvReset">Clear ticks</button>`:""}</div>
+    <div class="sec">Ingredients</div>
+    ${ings.length?`<div>${ings.map((ing,i)=>{const f=getFood(ing.food),a=ingAmountText(ing,f);
+      return `<div class="rv-ing ${ticks.has("i"+i)?"done":""}" data-tick="i${i}" role="button" aria-pressed="${ticks.has("i"+i)}"><div class="amt">${esc(a.main)}${a.sub?`<small>${esc(a.sub)}</small>`:""}</div><div><div class="nm">${esc(f?f.name:"(deleted food)")}${f&&f.brand?` <span class="nt">· ${esc(f.brand)}</span>`:""}</div>${ing.note?`<div class="nt">${esc(ing.note)}</div>`:""}</div></div>`;}).join("")}</div>`:`<div class="empty">No ingredients.</div>`}
+    <div class="sec">Steps</div>
+    ${steps.length?`<div>${steps.map((st,i)=>`<div class="rv-step ${ticks.has("s"+i)?"done":""}" data-tick="s${i}" role="button" aria-pressed="${ticks.has("s"+i)}"><div class="no">${ticks.has("s"+i)?"✓":i+1}</div><div class="tx">${esc(st)}</div></div>`).join("")}</div>`:`<div class="empty">No steps.</div>`}
+    ${r.notes?`<div class="sec">Notes</div><div class="rv-notes">${esc(r.notes)}</div>`:""}
+    <div class="sec">Nutrition (whole recipe)</div>
+    <div class="small muted">${ings.length?`<b style="color:var(--ink)">${t.inc?"≥ ":""}${fmt(t.kcal,"kcal")} kcal</b>`+activeNuts().map(n=>` · ${esc(n.name)} ${t.n[n.id].inc?"≥ ":""}${fmt(t.n[n.id].v,n.unit)} ${esc(n.unit)}`).join(""):"–"}</div>
+    ${ings.length||steps.length?`<div class="tiny muted" style="margin-top:14px">Tap an ingredient or step to tick it off.</div>`:""}`,sh=>{
+    $("#rvEdit",sh).onclick=()=>openRecipeEditor(id,()=>openRecipeView(id));
+    $("#rvShop",sh).onclick=()=>openAddRecipeToList(r);
+    if($("#rvReset",sh))$("#rvReset",sh).onclick=()=>{ticks.clear();keepScroll(()=>openRecipeView(id));};
+    $$("[data-tick]",sh).forEach(el=>el.onclick=()=>{const k=el.dataset.tick;if(ticks.has(k))ticks.delete(k);else ticks.add(k);keepScroll(()=>openRecipeView(id));});
+  });
+}
+// Re-opens a sheet at the same scroll position, so a redraw doesn't jump back to the top.
+function keepScroll(fn){const y=$("#sheet").scrollTop;fn();$("#sheet").scrollTop=y;}
+// back: optional function to return to (the read-only view) after saving or cancelling.
+async function openRecipeEditor(id,back){
   const orig=id?getRecipe(id):null;
   const r=orig?clone(orig):{id:"r"+uid(),name:"",source:"",ingredients:[],steps:[],notes:"",archived:false};
   const u=orig?await recipeUsage(id):{used:false,days:[]};
+  const done=()=>{if(back&&getRecipe(r.id))back();else closeSheet();};
   const foodsSorted=()=>S.foods.filter(f=>!f.archived||r.ingredients.some(i=>i.food===f.id)).sort(byName);
   const draw=()=>{
     openSheet(orig?"Edit recipe":"New recipe",`
@@ -805,7 +940,7 @@ async function openRecipeEditor(id){
       <textarea id="rSteps" placeholder="Chop the onions&#10;Fry in olive oil…">${esc((r.steps||[]).join("\n"))}</textarea>
       <div class="sec">Notes</div><textarea id="rNotes" style="min-height:60px">${esc(r.notes||"")}</textarea>
       <div id="rErr"></div>
-      <div class="btns"><button class="btn primary" id="rSave">Save</button>${orig?`<button class="btn" id="rShop">Add to shopping list</button><button class="btn" id="rArch">${r.archived?"Unarchive":"Archive"}</button><button class="btn danger" id="rDel" ${u.used?"disabled":""}>Delete</button>`:""}</div>
+      <div class="btns"><button class="btn primary" id="rSave">Save</button>${back?`<button class="btn" id="rCancel">Cancel</button>`:""}${orig?`<button class="btn" id="rShop">Add to shopping list</button><button class="btn" id="rArch">${r.archived?"Unarchive":"Archive"}</button><button class="btn danger" id="rDel" ${u.used?"disabled":""}>Delete</button>`:""}</div>
       ${orig&&u.used?`<div class="tiny muted" style="margin-top:6px">Used on ${esc(usageText(u))}, so it can be archived but not deleted.</div>`:""}`,sh=>{
       const read=()=>{r.name=$("#rName",sh).value.trim();r.source=$("#rSrc",sh).value.trim();r.steps=$("#rSteps",sh).value.split("\n").map(s=>s.trim()).filter(Boolean);r.notes=$("#rNotes",sh).value.trim();
         $$("[data-ii]",sh).forEach(el=>{const ing=r.ingredients[+el.dataset.ii],k=el.dataset.ik;if(k==="amount")ing.amount=num(el.value);else if(k==="serving")ing.serving=el.value||null;else if(k==="note")ing.note=el.value.trim();else ing.food=el.value;});};
@@ -815,14 +950,15 @@ async function openRecipeEditor(id){
       $("#newFoodIng",sh).onclick=()=>{read();pendingRecipeDraft=r;openFoodEditorForRecipe();};
       $$("[data-irm]",sh).forEach(b=>b.onclick=()=>{read();r.ingredients.splice(+b.dataset.irm,1);draw();});
       nut();
-      $("#rSave",sh).onclick=()=>{read();const err=validateRecipe(r);if(err){$("#rErr",sh).innerHTML=`<div class="warnbox">${esc(err)}</div>`;return;}saveRecipe(r);closeSheet();render();};
+      $("#rSave",sh).onclick=()=>{read();const err=validateRecipe(r);if(err){$("#rErr",sh).innerHTML=`<div class="warnbox">${esc(err)}</div>`;return;}saveRecipe(r);render();done();};
+      if($("#rCancel",sh))$("#rCancel",sh).onclick=back;
       if($("#rArch",sh))$("#rArch",sh).onclick=()=>{read();const err=validateRecipe(r);if(err){$("#rErr",sh).innerHTML=`<div class="warnbox">${esc(err)}</div>`;return;}r.archived=!r.archived;saveRecipe(r);closeSheet();render();};
       if($("#rShop",sh))$("#rShop",sh).onclick=()=>{read();openAddRecipeToList(r);};
       if($("#rDel",sh)&&!u.used)confirmBtn($("#rDel",sh),"Tap again to delete",()=>{S.recipes=S.recipes.filter(x=>x.id!==r.id);store.del("recipes",r.id);closeSheet();render();});
     });
   };
   draw();
-  openRecipeEditor._redraw=draw;
+  openRecipeEditor._redraw=draw;openRecipeEditor._back=back;
 }
 let pendingRecipeDraft=null;
 function openFoodEditorForRecipe(){
@@ -844,7 +980,7 @@ async function reopenRecipe(draft){
   // Re-open the editor on an unsaved draft.
   const exists=getRecipe(draft.id);
   const tmp=clone(draft);
-  if(exists){const saved=clone(exists);Object.assign(exists,tmp);await openRecipeEditor(draft.id);Object.assign(exists,saved);}
+  if(exists){const saved=clone(exists);Object.assign(exists,tmp);await openRecipeEditor(draft.id,openRecipeEditor._back);Object.assign(exists,saved);}
   else{S.recipes.push(tmp);await openRecipeEditor(tmp.id);S.recipes=S.recipes.filter(x=>x!==tmp);}
 }
 function validateRecipe(r){
@@ -942,9 +1078,11 @@ const acts={
   prevDay:()=>openDate(addDays(S.date,-1)),
   nextDay:()=>{const d=addDays(S.date,1);if(d<=today())openDate(d);},
   openSettings,
+  range:n=>{S.range=+n;lsSet("ft2:ui:range",S.range);render();},
+  goDay:k=>{if(k<=today()){openDate(k);window.scrollTo(0,0);}},
   editEntry:id=>{const e=curDay().entries.find(x=>x.id===id);if(e)openAmount(clone(e));},
   "new-food":()=>openFoodEditor(null),editFood:id=>openFoodEditor(id),
-  "new-recipe":()=>openRecipeEditor(null),editRecipe:id=>openRecipeEditor(id),
+  "new-recipe":()=>openRecipeEditor(null),viewRecipe:id=>openRecipeView(id),
   "new-nutrient":()=>openNutrientEditor(null),editNutrient:id=>openNutrientEditor(id),editEnergy:openEnergyEditor,
   newList:()=>{openSheet("New shopping list",`<label class="f">Name</label><input type="text" id="lnName" value="Shopping list"><div class="btns"><button class="btn primary" id="lnOk">Create</button></div>`,sh=>{
     $("#lnOk",sh).onclick=()=>{const l={id:"l"+uid(),name:$("#lnName",sh).value.trim()||"Shopping list",items:[],created:Date.now()};saveList(l);S.listId=l.id;closeSheet();render();};});},
@@ -1030,7 +1168,7 @@ async function boot(){
     await migrateV1();
     saveSettings();
   }else S.settings=settings;
-  try{const ds_=await store.where("days","date",">=",addDays(today(),-60));for(const d of ds_)S.days[d.date]=d;}catch(e){}
+  try{const from=addDays(today(),-60);const ds_=await store.where("days","date",">=",from);for(const d of ds_)S.days[d.date]=d;S.loadedFrom=from;}catch(e){}
   setPage();
 }
 boot();
